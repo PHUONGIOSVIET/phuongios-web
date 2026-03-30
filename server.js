@@ -12,9 +12,9 @@ const CONFIG = {
   JWT_SECRET: 'phuongios_jwt_secret_2026_change_this',
   DB: {
     host: 'localhost',
-    user: 'root',
-    password: '123',
-    database: 'shop_key',
+    user: 'jsphuon_shopkey',
+    password: 'phuongios.com',
+    database: 'jsphuon_shopkey',
   },
   // Pay2S
   PAY2S_ACCESS_KEY: 'e2a744f23ce1090427421c6af1df706a80389370589eea69c127c14d661d08b7',
