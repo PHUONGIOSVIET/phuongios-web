@@ -40,6 +40,80 @@ const CONFIG = {
 };
 
 const app = express();
+
+// ============================================================
+//  UDID - Phải đặt TRƯỚC express.json() vì callback nhận raw data
+// ============================================================
+app.get('/api/udid/profile', (req, res) => {
+  const uuid1 = 'phuongios-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8);
+  const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <dict>
+        <key>URL</key>
+        <string>https://phuongios.com/api/udid/callback</string>
+        <key>DeviceAttributes</key>
+        <array>
+            <string>UDID</string>
+            <string>IMEI</string>
+            <string>ICCID</string>
+            <string>VERSION</string>
+            <string>PRODUCT</string>
+            <string>SERIAL</string>
+            <string>MAC_ADDRESS_EN0</string>
+        </array>
+    </dict>
+    <key>PayloadOrganization</key>
+    <string>PHUONGIOS</string>
+    <key>PayloadDisplayName</key>
+    <string>PHUONGIOS - Lấy UDID thiết bị</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadUUID</key>
+    <string>${uuid1}</string>
+    <key>PayloadIdentifier</key>
+    <string>com.phuongios.udid-profile</string>
+    <key>PayloadDescription</key>
+    <string>Profile tạm thời để lấy UDID thiết bị. Bạn có thể xoá profile này sau khi lấy UDID.</string>
+    <key>PayloadType</key>
+    <string>Profile Service</string>
+</dict>
+</plist>`;
+
+  res.set({
+    'Content-Type': 'application/x-apple-aspen-config',
+    'Content-Disposition': 'attachment; filename="phuongios-udid.mobileconfig"',
+  });
+  res.send(mobileconfig);
+});
+
+app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (req, res) => {
+  try {
+    const body = req.body.toString();
+    const extract = (key) => {
+      const match = body.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`));
+      return match ? match[1] : '';
+    };
+
+    const udid = extract('UDID');
+    const product = extract('PRODUCT');
+    const version = extract('VERSION');
+    const serial = extract('SERIAL');
+    const imei = extract('IMEI');
+
+    console.log('[UDID] Device:', product, '| iOS:', version, '| UDID:', udid);
+
+    // Redirect to UDID result page
+    const params = new URLSearchParams({ udid, product, version, serial, imei });
+    res.status(301).set('Location', '/udid.html?' + params.toString()).send();
+  } catch (e) {
+    console.error('[UDID] Error:', e.message);
+    res.redirect('/udid.html?error=1');
+  }
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'phuongios')));
 

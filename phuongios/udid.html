@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lấy UDID — PHUONGIOS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .udid-result-card {
+      max-width:520px; margin:40px auto; padding:32px;
+      background:#fff; border-radius:20px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.1);
+    }
+    .udid-result-card h2 { font-size:22px; font-weight:700; margin-bottom:20px; text-align:center; }
+    .udid-value {
+      background:#1a1a2e; color:#22c55e; padding:16px 20px;
+      border-radius:12px; font-family:monospace; font-size:15px;
+      word-break:break-all; cursor:pointer; position:relative;
+      text-align:center; letter-spacing:0.5px; margin-bottom:16px;
+    }
+    .udid-value:hover { background:#16213e; }
+    .device-info { display:grid; gap:10px; margin-bottom:20px; }
+    .device-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 14px; background:#f8fafc; border-radius:8px;
+      font-size:13.5px;
+    }
+    .device-row .label { color:var(--muted); font-weight:500; }
+    .device-row .value { font-weight:700; color:var(--text); }
+    .get-udid-section {
+      max-width:520px; margin:40px auto; text-align:center;
+    }
+    .get-udid-section h2 { font-size:24px; font-weight:700; margin-bottom:12px; }
+    .get-udid-section p { color:var(--muted); font-size:14px; margin-bottom:24px; line-height:1.6; }
+    .safari-warning {
+      background:#fff3cd; border:1px solid #ffc107; border-radius:12px;
+      padding:14px 18px; font-size:13px; color:#856404;
+      display:flex; gap:10px; align-items:flex-start; margin-bottom:20px;
+      text-align:left;
+    }
+    .step-list { text-align:left; margin:20px 0; }
+    .step-item {
+      display:flex; gap:14px; align-items:flex-start;
+      padding:14px; background:#fff; border-radius:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:10px;
+    }
+    .step-num {
+      width:30px; height:30px; border-radius:50%;
+      background:var(--primary); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:13px; flex-shrink:0;
+    }
+    .step-text { font-size:13.5px; line-height:1.5; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <a href="index.html" class="logo">PHUONG<span>IOS</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Trang chủ</a></li>
+      <li><a href="index.html#products">Sản phẩm</a></li>
+    </ul>
+    <div class="header-right">
+      <a href="dangnhap.html" class="btn btn-primary btn-sm"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a>
+    </div>
+  </div>
+</header>
+
+<div class="container" style="padding:20px">
+  <!-- Kết quả UDID (nếu có) -->
+  <div id="udid-result" style="display:none">
+    <div class="udid-result-card">
+      <div style="text-align:center;margin-bottom:16px">
+        <i class="fas fa-check-circle" style="font-size:48px;color:var(--green)"></i>
+      </div>
+      <h2>Thông tin thiết bị của bạn</h2>
+
+      <p style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-align:center">UDID (bấm để copy)</p>
+      <div class="udid-value" id="udid-text" onclick="copyUDID()"></div>
+
+      <div class="device-info">
+        <div class="device-row">
+          <span class="label"><i class="fas fa-mobile-alt"></i> Thiết bị</span>
+          <span class="value" id="info-product">—</span>
+        </div>
+        <div class="device-row">
+          <span class="label"><i class="fab fa-apple"></i> Phiên bản iOS</span>
+          <span class="value" id="info-version">—</span>
+        </div>
+        <div class="device-row">
+          <span class="label"><i class="fas fa-barcode"></i> Serial</span>
+          <span class="value" id="info-serial">—</span>
+        </div>
+        <div class="device-row" id="row-imei" style="display:none">
+          <span class="label"><i class="fas fa-sim-card"></i> IMEI</span>
+          <span class="value" id="info-imei">—</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" style="padding:13px;margin-bottom:10px" onclick="copyUDID()">
+        <i class="fas fa-copy"></i> Copy UDID
+      </button>
+
+      <a href="https://t.me/PHUONGIOSVIET" target="_blank" class="btn btn-success btn-block" style="padding:13px;text-decoration:none">
+        <i class="fab fa-telegram"></i> Gửi UDID qua Telegram
+      </a>
+
+      <div class="info-box" style="margin-top:16px;margin-bottom:0">
+        <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
+        <span>Bạn có thể xoá profile <strong>"PHUONGIOS - Lấy UDID"</strong> trong Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trang hướng dẫn (khi chưa có UDID) -->
+  <div id="udid-guide">
+    <div class="get-udid-section">
+      <div style="font-size:48px;margin-bottom:16px"><i class="fab fa-apple" style="color:#333"></i></div>
+      <h2>Lấy UDID iPhone / iPad</h2>
+      <p>UDID là mã định danh duy nhất của thiết bị Apple, cần thiết để đăng ký chứng chỉ Developer Certificate.</p>
+
+      <div class="safari-warning">
+        <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px"></i>
+        <span><strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.</span>
+      </div>
+
+      <a href="/api/udid/profile" class="btn btn-primary btn-block" style="padding:15px;font-size:16px;margin-bottom:20px;text-decoration:none">
+        <i class="fas fa-download"></i> Lấy UDID ngay
+      </a>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-text">Bấm nút <strong style="color:var(--primary)">"Lấy UDID ngay"</strong> ở trên</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-text">Bấm <strong>"Cho phép"</strong> khi hiện popup tải Profile</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-text">Mở <strong>Cài đặt</strong> → <strong>Đã tải về</strong> (hoặc thông báo trên cùng) → Bấm <strong>Cài đặt</strong> Profile</div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-text">Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <a href="index.html" class="btn btn-outline btn-sm" style="text-decoration:none">
+          <i class="fas fa-arrow-left"></i> Quay lại trang chủ
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>&copy; 2026 <strong>PHUONGIOS</strong>. Tất cả quyền được bảo lưu.</p>
+    <p style="margin-top:6px">Hỗ trợ: <a href="https://t.me/PHUONGIOSVIET" style="color:var(--primary)">Telegram @PHUONGIOSVIET</a></p>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const udid = params.get('udid');
+
+if (udid && udid !== '' && udid !== 'unknown') {
+  // Hiển thị kết quả
+  document.getElementById('udid-guide').style.display = 'none';
+  document.getElementById('udid-result').style.display = 'block';
+
+  document.getElementById('udid-text').textContent = udid;
+
+  const product = params.get('product') || '—';
+  const version = params.get('version') || '—';
+  const serial = params.get('serial') || '—';
+  const imei = params.get('imei') || '';
+
+  // Map product code to device name
+  const deviceNames = {
+    'iPhone14,5': 'iPhone 13', 'iPhone14,2': 'iPhone 13 Pro', 'iPhone14,3': 'iPhone 13 Pro Max',
+    'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max', 'iPhone15,4': 'iPhone 15',
+    'iPhone15,5': 'iPhone 15 Plus', 'iPhone16,1': 'iPhone 15 Pro', 'iPhone16,2': 'iPhone 15 Pro Max',
+    'iPhone17,1': 'iPhone 16 Pro', 'iPhone17,2': 'iPhone 16 Pro Max', 'iPhone17,3': 'iPhone 16',
+    'iPad13,18': 'iPad (10th gen)', 'iPad14,1': 'iPad Mini (6th gen)',
+  };
+
+  document.getElementById('info-product').textContent = deviceNames[product] || product;
+  document.getElementById('info-version').textContent = version;
+  document.getElementById('info-serial').textContent = serial || '—';
+
+  if (imei) {
+    document.getElementById('info-imei').textContent = imei;
+    document.getElementById('row-imei').style.display = 'flex';
+  }
+}
+
+function copyUDID() {
+  const udidText = document.getElementById('udid-text').textContent;
+  navigator.clipboard.writeText(udidText).then(() => {
+    showToast('Đã copy UDID!', 'success');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = udidText;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Đã copy UDID!', 'success');
+  });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
