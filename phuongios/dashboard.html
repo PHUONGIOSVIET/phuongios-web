@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — PHUONGIOS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="container">
+    <a href="index.html" class="logo">PHUONG<span>IOS</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Trang chủ</a></li>
+    </ul>
+    <div class="header-right">
+      <div class="balance-badge"><i class="fas fa-wallet"></i> <span id="h-balance">0đ</span></div>
+      <div class="user-badge" onclick="document.getElementById('user-dd').classList.toggle('show')">
+        <div class="user-avatar-sm" id="h-avatar">?</div>
+        <span id="h-username">...</span>
+        <div class="user-dropdown" id="user-dd">
+          <a href="index.html"><i class="fas fa-home"></i> Trang chủ</a>
+          <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="dash-tabs">
+  <div class="container">
+    <button class="dash-tab active" onclick="switchTab('home',this)"><i class="fas fa-home"></i> Tổng quan</button>
+    <button class="dash-tab" onclick="switchTab('shop',this)"><i class="fas fa-shopping-cart"></i> Mua hàng</button>
+    <button class="dash-tab" onclick="switchTab('deposit',this)"><i class="fas fa-wallet"></i> Nạp tiền</button>
+    <button class="dash-tab" onclick="switchTab('orders',this)"><i class="fas fa-list-alt"></i> Đơn hàng</button>
+  </div>
+</div>
+
+<!-- ============ TỔNG QUAN ============ -->
+<div class="dash-page active" id="page-home">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e0f2fe;color:var(--primary)"><i class="fas fa-dollar-sign"></i></div>
+        <div><div class="stat-label">Số dư hiện tại</div><div class="stat-value" id="s-balance">0đ</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--green-bg);color:var(--green)"><i class="fas fa-shopping-cart"></i></div>
+        <div><div class="stat-label">Đơn hàng</div><div class="stat-value" id="s-orders">0</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--orange-bg);color:var(--orange)"><i class="fas fa-chart-line"></i></div>
+        <div><div class="stat-label">Đã chi tiêu</div><div class="stat-value" id="s-spent">0đ</div></div>
+      </div>
+    </div>
+
+    <div class="section-header"><h2 class="section-title"><i class="fas fa-clock" style="color:var(--purple)"></i> Đơn hàng gần đây</h2></div>
+    <div id="recent-orders"><div class="loading"><span class="spinner"></span></div></div>
+  </div>
+</div>
+
+<!-- ============ MUA HÀNG ============ -->
+<div class="dash-page" id="page-shop">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:12px">
+      <h2 class="section-title"><i class="fas fa-shopping-cart" style="color:var(--primary)"></i> Chọn sản phẩm</h2>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Số dư của bạn: <strong id="shop-balance" style="color:var(--green)">0đ</strong>. Bấm "Mua ngay" để thanh toán bằng số dư.</p>
+    <div class="product-grid" id="product-list">
+      <div class="loading"><span class="spinner"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NẠP TIỀN ============ -->
+<div class="dash-page" id="page-deposit">
+  <div class="container">
+    <div class="section-header"><h2 class="section-title"><i class="fas fa-wallet" style="color:var(--primary)"></i> Nạp tiền vào tài khoản</h2></div>
+
+    <div class="deposit-layout">
+      <div>
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-coins" style="color:var(--orange)"></i> Chọn số tiền nạp
+          </h3>
+          <div class="amount-grid">
+            <button class="amount-btn" onclick="selectAmt(this,50000)">50.000đ</button>
+            <button class="amount-btn" onclick="selectAmt(this,100000)">100.000đ</button>
+            <button class="amount-btn selected" onclick="selectAmt(this,200000)">200.000đ</button>
+            <button class="amount-btn" onclick="selectAmt(this,500000)">500.000đ</button>
+            <button class="amount-btn" onclick="selectAmt(this,1000000)">1.000.000đ</button>
+            <button class="amount-btn" onclick="selectAmt(this,2000000)">2.000.000đ</button>
+          </div>
+          <div class="form-group">
+            <label>Hoặc nhập số tiền khác</label>
+            <input type="number" class="form-control" id="custom-amt" placeholder="Nhập số tiền (VD: 150000)" oninput="updateDepositAmt()">
+          </div>
+        </div>
+
+        <!-- Deposit history -->
+        <div class="card">
+          <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-history" style="color:var(--purple)"></i> Lịch sử nạp
+          </h3>
+          <div id="deposit-history"><div class="loading"><span class="spinner"></span></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-qrcode" style="color:var(--green)"></i> Thanh toán
+          </h3>
+
+          <div class="summary-box">
+            <div class="sum-row"><span>Số tiền nạp</span><span id="dep-amt">200.000đ</span></div>
+            <div class="sum-row"><span>Phương thức</span><span>QR Ngân hàng</span></div>
+            <div class="sum-row"><span>Tổng thanh toán</span><span id="dep-total" style="color:var(--primary)">200.000đ</span></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" style="padding:13px;margin-bottom:16px" onclick="createDeposit()" id="btn-deposit">
+            <i class="fas fa-qrcode"></i> Tạo mã QR nạp tiền
+          </button>
+
+          <div id="qr-result" style="display:none">
+            <div class="qr-box">
+              <img id="qr-img" alt="QR Code">
+              <p style="margin-top:10px;font-size:13px;color:var(--muted)">Quét QR bằng app ngân hàng để thanh toán</p>
+            </div>
+            <div class="summary-box">
+              <div class="sum-row"><span>Ngân hàng</span><span id="qr-bank">MBBANK</span></div>
+              <div class="sum-row"><span>Số tài khoản</span><span id="qr-stk" style="font-weight:800">0000154878888</span></div>
+              <div class="sum-row"><span>Nội dung CK</span><span id="qr-code" style="color:var(--primary);font-weight:800">NAP...</span></div>
+              <div class="sum-row"><span>Số tiền</span><span id="qr-amount" style="color:var(--green);font-weight:800">0đ</span></div>
+            </div>
+            <div class="info-box">
+              <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
+              <span>Chuyển <strong>đúng số tiền</strong> và <strong>đúng nội dung</strong> để nạp tự động. Số dư cập nhật trong 1-2 phút.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ĐƠN HÀNG ============ -->
+<div class="dash-page" id="page-orders">
+  <div class="container">
+    <div class="section-header"><h2 class="section-title"><i class="fas fa-list-alt" style="color:var(--primary)"></i> Lịch sử đơn hàng</h2></div>
+    <div id="orders-list"><div class="loading"><span class="spinner"></span></div></div>
+  </div>
+</div>
+
+<!-- MODAL: Buy confirm -->
+<div class="modal-overlay" id="buy-modal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeBuyModal()">✕</button>
+    <div id="buy-modal-content"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>&copy; 2026 <strong>PHUONGIOS</strong>. Tất cả quyền được bảo lưu.</p>
+    <p style="margin-top:6px">Hỗ trợ: <a href="https://t.me/phuongios" style="color:var(--primary)">Telegram @phuongios</a></p>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  AUTH
+// ============================================================
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'dangnhap.html';
+
+const API = (url, opts = {}) => fetch(url, {
+  ...opts,
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token, ...opts.headers },
+}).then(r => r.json());
+
+let currentUser = null;
+
+async function loadUser() {
+  try {
+    currentUser = await API('/api/auth/me');
+    if (currentUser.error) throw new Error();
+    updateUI();
+  } catch {
+    localStorage.removeItem('token');
+    window.location.href = 'dangnhap.html';
+  }
+}
+
+function updateUI() {
+  const bal = fmt(currentUser.balance);
+  document.getElementById('h-balance').textContent = bal;
+  document.getElementById('h-username').textContent = currentUser.username;
+  document.getElementById('h-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('s-balance').textContent = bal;
+  document.getElementById('shop-balance').textContent = bal;
+}
+
+function fmt(n) { return (n || 0).toLocaleString('vi-VN') + 'đ'; }
+function logout() { localStorage.removeItem('token'); window.location.href = 'dangnhap.html'; }
+
+// ============================================================
+//  TAB SWITCHING
+// ============================================================
+function switchTab(tab, el) {
+  document.querySelectorAll('.dash-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (tab === 'shop') loadProducts();
+  if (tab === 'orders') loadOrders();
+  if (tab === 'deposit') loadDepositHistory();
+  if (tab === 'home') loadDashboard();
+}
+
+// ============================================================
+//  DASHBOARD HOME
+// ============================================================
+async function loadDashboard() {
+  await loadUser();
+  const orders = await API('/api/orders');
+  document.getElementById('s-orders').textContent = orders.length;
+  document.getElementById('s-spent').textContent = fmt(orders.reduce((s, o) => s + o.amount, 0));
+
+  const recent = orders.slice(0, 5);
+  if (recent.length === 0) {
+    document.getElementById('recent-orders').innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có đơn hàng nào</p><button class="btn btn-primary btn-sm" onclick="switchTab(\'shop\')">Mua hàng ngay</button></div>';
+    return;
+  }
+
+  document.getElementById('recent-orders').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Sản phẩm</th><th>Số tiền</th><th>Key</th><th>Ngày</th></tr></thead><tbody>' +
+    recent.map(o => `<tr>
+      <td><strong>${o.order_code}</strong></td>
+      <td>${o.product_name}</td>
+      <td style="font-weight:700">${fmt(o.amount)}</td>
+      <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
+      <td>${new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
+    </tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+// ============================================================
+//  PRODUCTS
+// ============================================================
+async function loadProducts() {
+  const products = await API('/api/products');
+  const grid = document.getElementById('product-list');
+
+  const gameProducts = products.filter(p => p.category === 'game');
+  const certProducts = products.filter(p => p.category === 'cert');
+
+  let html = '';
+
+  if (gameProducts.length > 0) {
+    html += '<div style="grid-column:1/-1"><h3 style="font-family:\'Be Vietnam Pro\',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px"><i class="fas fa-gamepad" style="color:#f59e0b"></i> Key Game</h3></div>';
+    html += gameProducts.map(p => productCard(p, 'game')).join('');
+  }
+
+  if (certProducts.length > 0) {
+    html += '<div style="grid-column:1/-1;margin-top:20px"><h3 style="font-family:\'Be Vietnam Pro\',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px"><i class="fab fa-apple" style="color:var(--purple)"></i> Chứng Chỉ Apple</h3></div>';
+    html += certProducts.map(p => productCard(p, 'cert')).join('');
+  }
+
+  grid.innerHTML = html;
+
+  // Load stock counts
+  for (const p of products) {
+    const stockData = await API('/api/products/' + p.id + '/stock');
+    const el = document.getElementById('stock-' + p.id);
+    if (el) {
+      el.textContent = stockData.stock > 0 ? 'Còn ' + stockData.stock + ' key' : 'Hết hàng';
+      el.className = 'product-stock ' + (stockData.stock > 0 ? 'in-stock' : 'out');
+    }
+  }
+}
+
+function productCard(p, type) {
+  const icons = { FF:'🔫', LQ:'⚔️', BBP:'🎱', BBPI:'🎱', CF:'🔥', CERT7:'🍎', CERT30:'🍎', CERT90:'🍎' };
+  return `<div class="product-card">
+    <div class="product-header">
+      <div class="product-icon ${type}">${icons[p.id] || (type === 'cert' ? '🍎' : '🎮')}</div>
+      <div><div class="product-name">${p.name}</div><div class="product-cat">${p.category === 'cert' ? 'Apple Certificate' : 'Key hack game'}</div></div>
+    </div>
+    <p class="product-desc">${p.desc}</p>
+    <div class="product-footer">
+      <div>
+        <div class="product-price">${p.priceFormatted}</div>
+        <div class="product-stock" id="stock-${p.id}">Đang tải...</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="confirmBuy('${p.id}','${p.name}',${p.price})">Mua ngay</button>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+//  BUY
+// ============================================================
+function confirmBuy(id, name, price) {
+  const modal = document.getElementById('buy-modal');
+  document.getElementById('buy-modal-content').innerHTML = `
+    <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:18px;font-weight:800;margin-bottom:20px">Xác nhận mua hàng</h3>
+    <div class="summary-box">
+      <div class="sum-row"><span>Sản phẩm</span><span style="font-weight:700">${name}</span></div>
+      <div class="sum-row"><span>Giá</span><span style="color:var(--primary);font-weight:700">${fmt(price)}</span></div>
+      <div class="sum-row"><span>Số dư hiện tại</span><span>${fmt(currentUser.balance)}</span></div>
+      <div class="sum-row"><span>Số dư còn lại</span><span style="color:${currentUser.balance >= price ? 'var(--green)' : 'var(--red)'}">${fmt(currentUser.balance - price)}</span></div>
+    </div>
+    ${currentUser.balance < price
+      ? '<div class="info-box"><i class="fas fa-exclamation-triangle"></i><span>Số dư không đủ! Vui lòng <a href="#" onclick="closeBuyModal();switchTab(\'deposit\')" style="color:var(--primary);font-weight:700">nạp thêm tiền</a>.</span></div>'
+      : `<button class="btn btn-success btn-block" style="padding:13px" onclick="doBuy('${id}')" id="btn-buy"><i class="fas fa-check-circle"></i> Xác nhận mua - ${fmt(price)}</button>`
+    }
+  `;
+  modal.classList.add('show');
+}
+
+function closeBuyModal() { document.getElementById('buy-modal').classList.remove('show'); }
+
+async function doBuy(productId) {
+  const btn = document.getElementById('btn-buy');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Đang xử lý...';
+
+  try {
+    const res = await fetch('/api/orders/buy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ productId }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Xác nhận mua';
+      return;
+    }
+
+    // Show key
+    document.getElementById('buy-modal-content').innerHTML = `
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:20px;font-weight:800;color:var(--green)">Mua thành công!</h3>
+      </div>
+      <div class="summary-box">
+        <div class="sum-row"><span>Mã đơn</span><span style="font-weight:700">${data.order_code}</span></div>
+        <div class="sum-row"><span>Sản phẩm</span><span>${data.product}</span></div>
+        <div class="sum-row"><span>Số tiền</span><span>${fmt(data.amount)}</span></div>
+        <div class="sum-row"><span>Số dư còn lại</span><span style="color:var(--green)">${fmt(data.balance)}</span></div>
+      </div>
+      <p style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">KEY CỦA BẠN (click để copy):</p>
+      <div class="key-box" onclick="copyKey(this)">${data.key_code}</div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="closeBuyModal();loadProducts()">Đóng</button>
+    `;
+
+    currentUser.balance = data.balance;
+    updateUI();
+  } catch {
+    showToast('Lỗi kết nối server', 'error');
+    btn.disabled = false;
+  }
+}
+
+function copyKey(el) {
+  navigator.clipboard.writeText(el.textContent.trim());
+  showToast('Đã copy key!', 'success');
+}
+
+// ============================================================
+//  DEPOSIT
+// ============================================================
+let selectedAmt = 200000;
+
+function selectAmt(btn, amt) {
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedAmt = amt;
+  document.getElementById('custom-amt').value = '';
+  updateDepositAmt();
+}
+
+function updateDepositAmt() {
+  const custom = parseInt(document.getElementById('custom-amt').value) || 0;
+  const amt = custom || selectedAmt;
+  document.getElementById('dep-amt').textContent = fmt(amt);
+  document.getElementById('dep-total').textContent = fmt(amt);
+}
+
+async function createDeposit() {
+  const custom = parseInt(document.getElementById('custom-amt').value) || 0;
+  const amount = custom || selectedAmt;
+
+  const btn = document.getElementById('btn-deposit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Đang tạo...';
+
+  try {
+    const res = await fetch('/api/deposit/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error, 'error');
+      return;
+    }
+
+    document.getElementById('qr-img').src = data.qr_url;
+    document.getElementById('qr-bank').textContent = data.bank;
+    document.getElementById('qr-stk').textContent = data.stk;
+    document.getElementById('qr-code').textContent = data.deposit_code;
+    document.getElementById('qr-amount').textContent = fmt(data.amount);
+    document.getElementById('qr-result').style.display = 'block';
+
+    showToast('Đã tạo mã QR! Chuyển khoản để nạp tiền.', 'success');
+
+    // Auto refresh balance
+    startBalanceCheck();
+  } catch {
+    showToast('Lỗi kết nối server', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-qrcode"></i> Tạo mã QR nạp tiền';
+  }
+}
+
+let balanceInterval = null;
+function startBalanceCheck() {
+  if (balanceInterval) clearInterval(balanceInterval);
+  balanceInterval = setInterval(async () => {
+    const user = await API('/api/auth/me');
+    if (user.balance !== currentUser.balance) {
+      currentUser.balance = user.balance;
+      updateUI();
+      showToast('Nạp tiền thành công! Số dư: ' + fmt(user.balance), 'success');
+      clearInterval(balanceInterval);
+      loadDepositHistory();
+    }
+  }, 5000);
+  // Stop after 10 minutes
+  setTimeout(() => { if (balanceInterval) clearInterval(balanceInterval); }, 600000);
+}
+
+async function loadDepositHistory() {
+  const deposits = await API('/api/deposit/history');
+  const el = document.getElementById('deposit-history');
+  if (!deposits || deposits.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Chưa có lịch sử nạp</p>';
+    return;
+  }
+  el.innerHTML = deposits.map(d => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--green)">+${fmt(d.amount)}</div>
+        <div style="font-size:12px;color:var(--muted)">${d.deposit_code} &bull; ${new Date(d.created_at).toLocaleDateString('vi-VN')}</div>
+      </div>
+      <span class="badge ${d.status === 'completed' ? 'badge-success' : 'badge-warning'}">
+        <i class="fas fa-${d.status === 'completed' ? 'check' : 'clock'}"></i>
+        ${d.status === 'completed' ? 'Thành công' : 'Chờ xử lý'}
+      </span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  ORDERS
+// ============================================================
+async function loadOrders() {
+  const orders = await API('/api/orders');
+  const el = document.getElementById('orders-list');
+
+  if (!orders || orders.length === 0) {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Chưa có đơn hàng nào</p><button class="btn btn-primary btn-sm" onclick="switchTab(\'shop\')">Mua hàng ngay</button></div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Sản phẩm</th><th>Số tiền</th><th>Key</th><th>Trạng thái</th><th>Ngày</th></tr></thead><tbody>' +
+    orders.map(o => `<tr>
+      <td><strong>${o.order_code}</strong></td>
+      <td>${o.product_name}</td>
+      <td style="font-weight:700">${fmt(o.amount)}</td>
+      <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
+      <td><span class="badge badge-success"><i class="fas fa-check"></i> Hoàn thành</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
+    </tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+// ============================================================
+//  UTILS
+// ============================================================
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close dropdown on click outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-badge')) document.getElementById('user-dd').classList.remove('show');
+});
+
+// Close modal on overlay click
+document.getElementById('buy-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('buy-modal')) closeBuyModal();
+});
+
+// ============================================================
+//  INIT
+// ============================================================
+loadUser().then(() => loadDashboard());
+</script>
+</body>
+</html>
