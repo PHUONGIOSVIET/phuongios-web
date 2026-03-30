@@ -34,7 +34,7 @@ ul { list-style:none; }
 }
 .header .container { display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .logo { display:flex; align-items:center; gap:8px; font-family:'Be Vietnam Pro',sans-serif; font-size:22px; font-weight:800; color:var(--primary-dark); letter-spacing:-0.5px; }
-.logo img { width:180px; height:auto; object-fit:contain; }
+.logo img { height:38px; width:auto; object-fit:contain; }
 .logo span { color:var(--primary); }
 .nav-links { display:flex; gap:4px; }
 .nav-links a {
