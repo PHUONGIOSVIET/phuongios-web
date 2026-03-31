@@ -148,16 +148,10 @@
 </footer>
 
 <script>
-  const iconMap = {
-    FF: 'images/freefire.png', LQ: 'images/lienquan.png',
-    BBP: 'images/8ballpool.png', BBPI: 'images/8ballpool.png',
-    CF: 'images/crossfire.png', PLAY:  'images/playtogether.png',
-    CERT7: 'images/apple-cert.png', CERT30: 'images/apple-cert.png', CERT90: 'images/apple-cert.png'
-  };
   const defaultIcons = { game: 'images/freefire.png', cert: 'images/apple-cert.png' };
 
   function renderProductCard(p) {
-    const img = iconMap[p.id] || defaultIcons[p.category] || defaultIcons.game;
+    const img = p.icon ? ('images/' + p.icon) : (defaultIcons[p.category] || defaultIcons.game);
     const catLabel = p.category === 'cert' ? 'Apple Certificate' : 'Key hack game';
     const buyLink = token ? 'dashboard.html?tab=shop' : 'dangnhap.html';
     return `<div class="card product-card">

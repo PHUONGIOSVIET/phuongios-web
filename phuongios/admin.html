@@ -99,7 +99,7 @@
 
       <div class="table-wrap">
         <table class="mini-table">
-          <thead><tr><th>ID</th><th>Tên</th><th>Loại</th><th>Giá (đ)</th><th>Mô tả</th><th></th></tr></thead>
+          <thead><tr><th>Icon</th><th>ID</th><th>Tên</th><th>Loại</th><th>Giá (đ)</th><th>Mô tả</th><th></th></tr></thead>
           <tbody id="products-table"></tbody>
         </table>
       </div>
@@ -264,6 +264,15 @@ async function loadProducts() {
   const products = await API('/api/admin/products');
   document.getElementById('products-table').innerHTML = products.map(p => `
     <tr>
+      <td>
+        <div style="position:relative;width:48px;height:48px;cursor:pointer" onclick="document.getElementById('icon-input-${p.id}').click()" title="Bấm để đổi ảnh">
+          <img id="icon-img-${p.id}"
+            src="${p.icon ? 'images/' + p.icon : (p.category === 'cert' ? 'images/apple-cert.png' : 'images/freefire.png')}"
+            style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:2px solid var(--border)">
+          <div style="position:absolute;bottom:0;right:0;background:var(--primary);color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px"><i class="fas fa-camera"></i></div>
+        </div>
+        <input type="file" id="icon-input-${p.id}" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="uploadIcon('${p.id}', this)">
+      </td>
       <td><strong>${p.id}</strong></td>
       <td><input class="edit-price" style="width:130px;text-align:left" id="name-${p.id}" value="${p.name}"></td>
       <td><span class="badge ${p.category === 'game' ? 'badge-info' : 'badge-purple'}">${p.category}</span></td>
@@ -322,6 +331,32 @@ async function addProduct() {
   } else {
     showToast(res.error || 'Lỗi thêm sản phẩm', 'error');
   }
+}
+
+async function uploadIcon(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 512 * 1024) return showToast('Ảnh tối đa 500KB', 'error');
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result;
+    // Preview ngay
+    document.getElementById('icon-img-' + id).src = base64;
+    showToast('Đang upload...', '');
+    const res = await API('/api/admin/products/' + id + '/icon', {
+      method: 'POST', body: JSON.stringify({ base64 }),
+    });
+    if (res.success) {
+      showToast('Đã cập nhật icon ' + id + '!', 'success');
+      // Reload ảnh từ server (thêm timestamp để tránh cache)
+      document.getElementById('icon-img-' + id).src = 'images/' + res.filename + '?t=' + Date.now();
+    } else {
+      showToast(res.error || 'Lỗi upload', 'error');
+    }
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
 }
 
 async function deleteProduct(id) {

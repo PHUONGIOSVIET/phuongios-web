@@ -397,6 +397,7 @@ async function getProducts() {
     name: p.name,
     price: p.price,
     desc: p.description,
+    icon: p.icon || '',
     priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
   }));
 }
@@ -731,7 +732,7 @@ app.delete('/api/admin/keys/:id', adminAuth, async (req, res) => {
 // Lấy sản phẩm + giá hiện tại
 app.get('/api/admin/products', adminAuth, async (req, res) => {
   const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
-  res.json((products || []).map(p => ({ id: p.id, category: p.category, name: p.name, price: p.price, desc: p.description })));
+  res.json((products || []).map(p => ({ id: p.id, category: p.category, name: p.name, price: p.price, desc: p.description, icon: p.icon || '' })));
 });
 
 // Thêm sản phẩm mới
@@ -786,6 +787,42 @@ app.get('/api/admin/deposits', adminAuth, async (req, res) => {
     LEFT JOIN web_users u ON d.user_id = u.id
     ORDER BY d.created_at DESC LIMIT 100`);
   res.json(deposits || []);
+});
+
+// Upload icon sản phẩm (base64 → lưu file PNG)
+app.post('/api/admin/products/:id/icon', adminAuth, async (req, res) => {
+  const { base64 } = req.body;
+  if (!base64) return res.status(400).json({ error: 'Thiếu dữ liệu ảnh' });
+
+  const products = await db('SELECT id FROM web_products WHERE id = ?', [req.params.id]);
+  if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+
+  // Chỉ cho phép PNG/JPG, max 500KB
+  const matches = base64.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
+  if (!matches) return res.status(400).json({ error: 'Định dạng ảnh không hợp lệ (chỉ PNG/JPG)' });
+
+  const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+  const imageData = Buffer.from(matches[2], 'base64');
+  if (imageData.length > 512 * 1024) return res.status(400).json({ error: 'Ảnh quá lớn (tối đa 500KB)' });
+
+  const filename = `prod_${req.params.id.toLowerCase()}.${ext}`;
+  const fs = require('fs');
+
+  // Lưu vào phuongios/images/
+  const dir1 = path.join(__dirname, 'phuongios', 'images');
+  if (!fs.existsSync(dir1)) fs.mkdirSync(dir1, { recursive: true });
+  fs.writeFileSync(path.join(dir1, filename), imageData);
+
+  // Lưu vào public_html/images/ nếu tồn tại
+  const dir2 = path.join(__dirname, '..', 'public_html', 'images');
+  if (fs.existsSync(path.join(__dirname, '..', 'public_html'))) {
+    if (!fs.existsSync(dir2)) fs.mkdirSync(dir2, { recursive: true });
+    fs.writeFileSync(path.join(dir2, filename), imageData);
+  }
+
+  await db('UPDATE web_products SET icon = ? WHERE id = ?', [filename, req.params.id]);
+  adminLog('upload_icon', `${req.params.id}: ${filename}`, req.ip);
+  res.json({ success: true, filename });
 });
 
 // Admin logs
