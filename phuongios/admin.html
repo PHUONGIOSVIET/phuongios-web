@@ -72,6 +72,7 @@
       <button class="tab-btn" onclick="showPanel('orders',this)"><i class="fas fa-list"></i> Đơn hàng</button>
       <button class="tab-btn" onclick="showPanel('users',this)"><i class="fas fa-users"></i> Users</button>
       <button class="tab-btn" onclick="showPanel('deposits',this)"><i class="fas fa-wallet"></i> Nạp tiền</button>
+      <button class="tab-btn" onclick="showPanel('logs',this)"><i class="fas fa-clipboard-list"></i> Nhật ký</button>
     </div>
 
     <!-- SẢN PHẨM & GIÁ -->
@@ -130,6 +131,16 @@
         <table class="mini-table">
           <thead><tr><th>Mã nạp</th><th>User</th><th>Số tiền</th><th>Trạng thái</th><th>Ngày</th></tr></thead>
           <tbody id="deposits-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NHẬT KÝ ADMIN -->
+    <div class="admin-panel" id="panel-logs">
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>Thời gian</th><th>Hành động</th><th>Chi tiết</th><th>IP</th></tr></thead>
+          <tbody id="logs-table"></tbody>
         </table>
       </div>
     </div>
@@ -213,6 +224,7 @@ function showPanel(name, btn) {
   if (name === 'users') loadUsers();
   if (name === 'deposits') loadDeposits();
   if (name === 'products') loadProducts();
+  if (name === 'logs') loadLogs();
 }
 
 // ============ STATS ============
@@ -354,6 +366,26 @@ async function loadDeposits() {
       <td style="font-size:11px">${new Date(d.created_at).toLocaleString('vi-VN')}</td>
     </tr>
   `).join('');
+}
+
+// ============ LOGS ============
+async function loadLogs() {
+  const logs = await API('/api/admin/logs');
+  const actionLabels = {
+    admin_login: '🔐 Đăng nhập',
+    update_balance: '💰 Sửa số dư',
+    add_keys: '🔑 Thêm key',
+    delete_key: '🗑️ Xoá key',
+    update_product: '📝 Sửa sản phẩm',
+  };
+  document.getElementById('logs-table').innerHTML = logs.map(l => `
+    <tr>
+      <td style="font-size:11px;white-space:nowrap">${new Date(l.created_at).toLocaleString('vi-VN')}</td>
+      <td><span style="font-weight:600">${actionLabels[l.action] || l.action}</span></td>
+      <td style="font-size:12px">${l.detail || '—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${l.ip || '—'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Chưa có nhật ký</td></tr>';
 }
 
 // ============ UTILS ============

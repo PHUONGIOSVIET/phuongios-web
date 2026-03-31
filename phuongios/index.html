@@ -159,7 +159,7 @@
   function renderProductCard(p) {
     const img = iconMap[p.id] || defaultIcons[p.category] || defaultIcons.game;
     const catLabel = p.category === 'cert' ? 'Apple Certificate' : 'Key hack game';
-    const buyLink = token ? 'dashboard.html' : 'dangnhap.html';
+    const buyLink = token ? 'dashboard.html?tab=shop' : 'dangnhap.html';
     return `<div class="card product-card">
       <div class="product-header">
         <div class="product-icon ${p.category}"><img src="${img}" alt="${p.name}"></div>
@@ -223,9 +223,11 @@
           <a href="dashboard.html" class="btn btn-primary btn-sm"><i class="fas fa-th-large"></i> Dashboard</a>
         `;
         document.querySelectorAll('.product-footer .btn, .product-footer a.btn').forEach(b => {
-          if (b.href) b.href = 'dashboard.html';
-          if (b.getAttribute('onclick')) b.setAttribute('onclick', "location.href='dashboard.html'");
+          if (b.href) b.href = 'dashboard.html?tab=shop';
         });
+        // Update hero button too
+        const heroBtn = document.querySelector('.hero-btns a.btn-white');
+        if (heroBtn) heroBtn.href = 'dashboard.html?tab=shop';
       })
       .catch(() => localStorage.removeItem('token'));
   }

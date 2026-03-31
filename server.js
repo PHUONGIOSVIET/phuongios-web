@@ -241,7 +241,18 @@ async function initDB() {
     status ENUM('available','sold') DEFAULT 'available',
     added_date DATETIME DEFAULT NOW()
   )`);
+  await db(`CREATE TABLE IF NOT EXISTS admin_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    action VARCHAR(100) NOT NULL,
+    detail TEXT,
+    ip VARCHAR(50),
+    created_at DATETIME DEFAULT NOW()
+  )`);
   console.log('[DB] Sẵn sàng!');
+}
+
+async function adminLog(action, detail, ip) {
+  await db('INSERT INTO admin_logs (action, detail, ip) VALUES (?, ?, ?)', [action, detail || '', ip || '']);
 }
 
 // ============================================================
@@ -571,7 +582,8 @@ function adminAuth(req, res, next) {
 app.post('/api/admin/login', rateLimit('admin-login', 5, 300000), (req, res) => {
   const { password } = req.body;
   if (password !== CONFIG.ADMIN_PASSWORD) return res.status(401).json({ error: 'Sai mật khẩu admin' });
-  const token = jwt.sign({ isAdmin: true }, CONFIG.JWT_SECRET, { expiresIn: '24h' });
+  const token = jwt.sign({ isAdmin: true }, CONFIG.JWT_SECRET, { expiresIn: '30d' });
+  adminLog('admin_login', 'Đăng nhập admin', req.ip);
   res.json({ token });
 });
 
@@ -601,6 +613,7 @@ app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
   const { balance } = req.body;
   if (balance === undefined || balance < 0) return res.status(400).json({ error: 'Balance không hợp lệ' });
   await db('UPDATE web_users SET balance = ? WHERE id = ?', [balance, req.params.id]);
+  adminLog('update_balance', `User #${req.params.id} → ${balance}đ`, req.ip);
   res.json({ success: true });
 });
 
@@ -637,12 +650,14 @@ app.post('/api/admin/keys', adminAuth, async (req, res) => {
     const result = await db('INSERT INTO key_stock (game_name, key_code, status) VALUES (?, ?, "available")', [game_name, key]);
     if (result) added++;
   }
+  adminLog('add_keys', `${game_name}: +${added} key`, req.ip);
   res.json({ success: true, added });
 });
 
 // Xoá key
 app.delete('/api/admin/keys/:id', adminAuth, async (req, res) => {
   await db('DELETE FROM key_stock WHERE id = ?', [req.params.id]);
+  adminLog('delete_key', `Key #${req.params.id}`, req.ip);
   res.json({ success: true });
 });
 
@@ -658,10 +673,12 @@ app.post('/api/admin/products/:id/update', adminAuth, async (req, res) => {
   const products = await db('SELECT * FROM web_products WHERE id = ?', [req.params.id]);
   if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
 
-  if (price !== undefined) await db('UPDATE web_products SET price = ? WHERE id = ?', [price, req.params.id]);
-  if (desc) await db('UPDATE web_products SET description = ? WHERE id = ?', [desc, req.params.id]);
-  if (name) await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]);
+  const changes = [];
+  if (price !== undefined) { await db('UPDATE web_products SET price = ? WHERE id = ?', [price, req.params.id]); changes.push(`giá=${price}`); }
+  if (desc) { await db('UPDATE web_products SET description = ? WHERE id = ?', [desc, req.params.id]); changes.push('mô tả'); }
+  if (name) { await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]); changes.push(`tên=${name}`); }
 
+  adminLog('update_product', `${req.params.id}: ${changes.join(', ')}`, req.ip);
   res.json({ success: true });
 });
 
@@ -671,6 +688,12 @@ app.get('/api/admin/deposits', adminAuth, async (req, res) => {
     LEFT JOIN web_users u ON d.user_id = u.id
     ORDER BY d.created_at DESC LIMIT 100`);
   res.json(deposits || []);
+});
+
+// Admin logs
+app.get('/api/admin/logs', adminAuth, async (req, res) => {
+  const logs = await db('SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 200');
+  res.json(logs || []);
 });
 
 // ============================================================

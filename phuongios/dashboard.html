@@ -523,7 +523,16 @@ document.getElementById('buy-modal').addEventListener('click', e => {
 // ============================================================
 //  INIT
 // ============================================================
-loadUser().then(() => loadDashboard());
+loadUser().then(() => {
+  // Support ?tab=shop from homepage links
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  if (urlTab && document.getElementById('page-' + urlTab)) {
+    const btn = document.querySelector(`.dash-tab[onclick*="'${urlTab}'"]`);
+    switchTab(urlTab, btn);
+  } else {
+    loadDashboard();
+  }
+});
 </script>
 </body>
 </html>
