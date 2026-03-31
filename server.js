@@ -187,6 +187,26 @@ async function db(sql, params = []) {
 }
 
 async function initDB() {
+  // Bảng sản phẩm
+  await db(`CREATE TABLE IF NOT EXISTS web_products (
+    id VARCHAR(20) PRIMARY KEY,
+    category VARCHAR(20) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    price INT NOT NULL,
+    description TEXT,
+    icon VARCHAR(20) DEFAULT '',
+    sort_order INT DEFAULT 0
+  )`);
+  // Seed sản phẩm mặc định nếu bảng trống
+  const existing = await db('SELECT COUNT(*) as cnt FROM web_products');
+  if (existing && existing[0].cnt === 0) {
+    for (const p of CONFIG.PRODUCTS) {
+      await db('INSERT INTO web_products (id, category, name, price, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
+        [p.id, p.category, p.name, p.price, p.desc, CONFIG.PRODUCTS.indexOf(p)]);
+    }
+    console.log('[DB] Đã tạo sản phẩm mặc định');
+  }
+
   await db(`CREATE TABLE IF NOT EXISTS web_users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -289,19 +309,28 @@ app.get('/api/auth/me', auth, async (req, res) => {
 });
 
 // ============================================================
-//  PRODUCTS
+//  PRODUCTS (từ Database)
 // ============================================================
-app.get('/api/products', (req, res) => {
-  const products = CONFIG.PRODUCTS.map(p => {
-    return { ...p, priceFormatted: p.price.toLocaleString('vi-VN') + 'đ' };
-  });
-  res.json(products);
+async function getProducts() {
+  const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
+  return (products || []).map(p => ({
+    id: p.id,
+    category: p.category,
+    name: p.name,
+    price: p.price,
+    desc: p.description,
+    priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
+  }));
+}
+
+app.get('/api/products', async (req, res) => {
+  res.json(await getProducts());
 });
 
 app.get('/api/products/:id/stock', async (req, res) => {
-  const product = CONFIG.PRODUCTS.find(p => p.id === req.params.id);
-  if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-  const stock = await db('SELECT COUNT(*) as cnt FROM key_stock WHERE game_name = ? AND status = ?', [product.name, 'available']);
+  const products = await db('SELECT name FROM web_products WHERE id = ?', [req.params.id]);
+  if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+  const stock = await db('SELECT COUNT(*) as cnt FROM key_stock WHERE game_name = ? AND status = ?', [products[0].name, 'available']);
   res.json({ stock: stock ? stock[0].cnt : 0 });
 });
 
@@ -310,8 +339,9 @@ app.get('/api/products/:id/stock', async (req, res) => {
 // ============================================================
 app.post('/api/orders/buy', auth, rateLimit('buy', 5, 60000), async (req, res) => {
   const { productId } = req.body;
-  const product = CONFIG.PRODUCTS.find(p => p.id === productId);
-  if (!product) return res.status(400).json({ error: 'Sản phẩm không tồn tại' });
+  const prods = await db('SELECT * FROM web_products WHERE id = ?', [productId]);
+  if (!prods || prods.length === 0) return res.status(400).json({ error: 'Sản phẩm không tồn tại' });
+  const product = { id: prods[0].id, name: prods[0].name, price: prods[0].price };
 
   const users = await db('SELECT balance FROM web_users WHERE id = ?', [req.user.id]);
   if (!users || users.length === 0) return res.status(400).json({ error: 'User không tồn tại' });
@@ -588,6 +618,12 @@ app.get('/api/admin/keys', adminAuth, async (req, res) => {
   res.json(keys || []);
 });
 
+// Danh sách tên sản phẩm (cho dropdown thêm key)
+app.get('/api/admin/product-names', adminAuth, async (req, res) => {
+  const products = await db('SELECT id, name FROM web_products ORDER BY sort_order ASC');
+  res.json(products || []);
+});
+
 // Thêm key
 app.post('/api/admin/keys', adminAuth, async (req, res) => {
   const { game_name, keys } = req.body;
@@ -611,29 +647,22 @@ app.delete('/api/admin/keys/:id', adminAuth, async (req, res) => {
 });
 
 // Lấy sản phẩm + giá hiện tại
-app.get('/api/admin/products', adminAuth, (req, res) => {
-  res.json(CONFIG.PRODUCTS);
+app.get('/api/admin/products', adminAuth, async (req, res) => {
+  const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
+  res.json((products || []).map(p => ({ id: p.id, category: p.category, name: p.name, price: p.price, desc: p.description })));
 });
 
-// Sửa giá sản phẩm
-app.post('/api/admin/products/:id/price', adminAuth, (req, res) => {
-  const { price } = req.body;
-  if (!price || price < 0) return res.status(400).json({ error: 'Giá không hợp lệ' });
-  const product = CONFIG.PRODUCTS.find(p => p.id === req.params.id);
-  if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-  product.price = price;
-  res.json({ success: true, product });
-});
-
-// Sửa mô tả sản phẩm
-app.post('/api/admin/products/:id/update', adminAuth, (req, res) => {
+// Sửa sản phẩm (giá, tên, mô tả)
+app.post('/api/admin/products/:id/update', adminAuth, async (req, res) => {
   const { price, desc, name } = req.body;
-  const product = CONFIG.PRODUCTS.find(p => p.id === req.params.id);
-  if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-  if (price !== undefined) product.price = price;
-  if (desc) product.desc = desc;
-  if (name) product.name = name;
-  res.json({ success: true, product });
+  const products = await db('SELECT * FROM web_products WHERE id = ?', [req.params.id]);
+  if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+
+  if (price !== undefined) await db('UPDATE web_products SET price = ? WHERE id = ?', [price, req.params.id]);
+  if (desc) await db('UPDATE web_products SET description = ? WHERE id = ?', [desc, req.params.id]);
+  if (name) await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]);
+
+  res.json({ success: true });
 });
 
 // Danh sách nạp tiền
