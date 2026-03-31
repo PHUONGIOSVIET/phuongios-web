@@ -166,7 +166,7 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
   }
 });
 
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '1mb' }));
 
 // ============================================================
 //  GEEKSIGN CERT API (proxy to hide site ID)
@@ -209,12 +209,6 @@ app.post('/api/cert/activate', rateLimit('cert-activate', 5, 60000), async (req,
   adminLog('cert_activate', `UDID: ${udid.substring(0, 8)}... | Code: ${code.substring(0, 6)}... | Result: ${result.msg}`, req.ip);
   res.json(result);
 });
-// Thư mục uploads nằm NGOÀI git repo → không bị xóa khi git reset
-const fs = require('fs');
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-app.use('/uploads', express.static(UPLOADS_DIR));
-
 app.use(express.static(path.join(__dirname, 'phuongios')));
 
 // ============================================================
@@ -245,11 +239,13 @@ async function initDB() {
     name VARCHAR(100) NOT NULL,
     price INT NOT NULL,
     description TEXT,
-    icon VARCHAR(20) DEFAULT '',
+    icon MEDIUMTEXT DEFAULT '',
     sort_order INT DEFAULT 0
   )`);
   // Convert bảng sang utf8mb4 + fix encoding lỗi (giữ nguyên giá đã sửa)
   await db('ALTER TABLE web_products CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+  // Migrate icon column sang MEDIUMTEXT nếu còn VARCHAR
+  await db('ALTER TABLE web_products MODIFY COLUMN icon MEDIUMTEXT DEFAULT ""');
   // Fix tên/mô tả bị lỗi encoding nhưng GIỮ NGUYÊN giá
   for (const p of CONFIG.PRODUCTS) {
     await db('UPDATE web_products SET name = ?, description = ? WHERE id = ? AND (name LIKE "%?%" OR description LIKE "%?%")',
@@ -796,7 +792,7 @@ app.get('/api/admin/deposits', adminAuth, async (req, res) => {
   res.json(deposits || []);
 });
 
-// Upload icon sản phẩm (base64 → lưu file PNG)
+// Upload icon sản phẩm (base64 → lưu thẳng vào DB, không cần file system)
 app.post('/api/admin/products/:id/icon', adminAuth, async (req, res) => {
   const { base64 } = req.body;
   if (!base64) return res.status(400).json({ error: 'Thiếu dữ liệu ảnh' });
@@ -804,24 +800,17 @@ app.post('/api/admin/products/:id/icon', adminAuth, async (req, res) => {
   const products = await db('SELECT id FROM web_products WHERE id = ?', [req.params.id]);
   if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
 
-  // Chỉ cho phép PNG/JPG, max 500KB
+  // Chỉ cho phép PNG/JPG/WEBP, max 500KB
   const matches = base64.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
   if (!matches) return res.status(400).json({ error: 'Định dạng ảnh không hợp lệ (chỉ PNG/JPG)' });
 
-  const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
   const imageData = Buffer.from(matches[2], 'base64');
   if (imageData.length > 512 * 1024) return res.status(400).json({ error: 'Ảnh quá lớn (tối đa 500KB)' });
 
-  const filename = `prod_${req.params.id.toLowerCase()}.${ext}`;
-
-  // Lưu vào UPLOADS_DIR (ngoài git repo, không bao giờ bị git reset --hard xóa)
-  fs.writeFileSync(path.join(UPLOADS_DIR, filename), imageData);
-
-  // Lưu path đầy đủ vào DB (uploads/prod_xx.png)
-  const iconPath = 'uploads/' + filename;
-  await db('UPDATE web_products SET icon = ? WHERE id = ?', [iconPath, req.params.id]);
-  adminLog('upload_icon', `${req.params.id}: ${iconPath}`, req.ip);
-  res.json({ success: true, icon: iconPath });
+  // Lưu base64 trực tiếp vào DB — không bao giờ mất
+  await db('UPDATE web_products SET icon = ? WHERE id = ?', [base64, req.params.id]);
+  adminLog('upload_icon', `${req.params.id}: ${Math.round(imageData.length/1024)}KB`, req.ip);
+  res.json({ success: true, icon: base64 });
 });
 
 // Admin logs

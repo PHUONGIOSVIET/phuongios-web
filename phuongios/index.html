@@ -151,7 +151,7 @@
   const defaultIcons = { game: 'images/freefire.png', cert: 'images/apple-cert.png' };
 
   function renderProductCard(p) {
-    const img = p.icon ? p.icon : (defaultIcons[p.category] || defaultIcons.game);
+    const img = (p.icon && p.icon.startsWith('data:')) ? p.icon : (defaultIcons[p.category] || defaultIcons.game);
     const catLabel = p.category === 'cert' ? 'Apple Certificate' : 'Key hack game';
     const buyLink = token ? 'dashboard.html?tab=shop' : 'dangnhap.html';
     return `<div class="card product-card">

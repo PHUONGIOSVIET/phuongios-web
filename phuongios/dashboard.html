@@ -288,7 +288,7 @@ async function loadProducts() {
 }
 
 function productCard(p, type) {
-  const img = p.icon ? p.icon : (type === 'cert' ? 'images/apple-cert.png' : 'images/freefire.png');
+  const img = (p.icon && p.icon.startsWith('data:')) ? p.icon : (type === 'cert' ? 'images/apple-cert.png' : 'images/freefire.png');
   return `<div class="product-card">
     <div class="product-header">
       <div class="product-icon ${type}"><img src="${img}" alt="${p.name}"></div>
