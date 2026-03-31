@@ -119,9 +119,9 @@
         <div class="form-group">
           <label style="font-size:13px;font-weight:600">Loại ký</label>
           <select class="form-control" id="cert-appid" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;width:100%">
-            <option value="0">Chỉ tải chứng chỉ</option>
-            <option value="2" selected>Cài Esign (轻松签)</option>
+            <option value="2" selected>Cài Esign (轻松签) — Khuyên dùng</option>
             <option value="1">Cài toàn bộ (全能签)</option>
+            <option value="0">Chỉ tải file chứng chỉ (.zip)</option>
           </select>
         </div>
         <button class="btn btn-success btn-block" style="padding:13px;font-size:15px" onclick="activateCert()" id="btn-activate">
@@ -286,16 +286,26 @@ async function activateCert() {
     if (data.code === 1 || data.code === 0) {
       // Thành công
       let html = `<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:16px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> Kích hoạt thành công!</div>`;
+        <div style="font-weight:700;color:#16a34a;margin-bottom:12px;font-size:16px"><i class="fas fa-check-circle"></i> Kích hoạt thành công!</div>`;
 
+      if (data.data && data.data.url) {
+        html += `<a href="${data.data.url}" class="btn btn-success btn-block" style="padding:14px;text-decoration:none;margin-bottom:8px;font-size:15px">
+          <i class="fas fa-arrow-down"></i> Cài đặt Esign ngay
+        </a>`;
+      }
+      if (data.data && data.data.zip) {
+        html += `<a href="${data.data.zip}" class="btn btn-primary btn-block" style="padding:14px;text-decoration:none;margin-bottom:8px;font-size:15px">
+          <i class="fas fa-file-archive"></i> Tải file chứng chỉ (.zip)
+        </a>`;
+      }
       if (data.data && data.data.plist) {
-        html += `<a href="${data.data.plist}" class="btn btn-success btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
-          <i class="fas fa-download"></i> Cài đặt chứng chỉ
+        html += `<a href="${data.data.plist}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
+          <i class="fas fa-download"></i> Cài qua link trực tiếp
         </a>`;
       }
       if (data.data && data.data.sign) {
-        html += `<a href="${data.data.sign}" class="btn btn-primary btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
-          <i class="fas fa-download"></i> Tải file chứng chỉ (.p12)
+        html += `<a href="${data.data.sign}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
+          <i class="fas fa-file-alt"></i> Tải file .p12
         </a>`;
       }
       if (data.data && data.data.mobileprovision) {
@@ -303,7 +313,7 @@ async function activateCert() {
           <i class="fas fa-file-alt"></i> Tải Mobileprovision
         </a>`;
       }
-      if (data.msg) html += `<p style="font-size:12px;color:var(--muted);margin-top:8px">${data.msg}</p>`;
+      html += '<p style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">Bấm "Cài đặt Esign ngay" trên Safari để cài trực tiếp</p>';
       html += '</div>';
       box.innerHTML = html;
       showToast('Kích hoạt thành công!', 'success');
@@ -344,13 +354,53 @@ async function checkStatus() {
       let html = '<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:14px">';
       html += '<div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> Đã tìm thấy chứng chỉ</div>';
       data.data.forEach(d => {
-        const stateColor = d.state === '正常' ? '#16a34a' : '#dc2626';
-        const stateText = d.state === '正常' ? 'Hoạt động' : d.state === '已掉' ? 'Đã rớt' : d.state;
-        html += `<div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;font-size:13px">
-          <div><strong>${d.pname || 'Thiết bị'}</strong></div>
-          <div style="color:var(--muted);margin-top:4px">Loại: ${d.type || '—'} | Trạng thái: <span style="color:${stateColor};font-weight:700">${stateText}</span></div>
-          <div style="color:var(--muted);margin-top:2px">Ngày thêm: ${d.addtime || '—'}</div>
-        </div>`;
+        const isOk = d.state === '正常';
+        const isDown = d.state === '已掉' || d.state === '已撤销';
+        const stateColor = isOk ? '#16a34a' : '#dc2626';
+        const stateText = isOk ? '✅ Hoạt động' : isDown ? '❌ Đã bị thu hồi' : d.state;
+
+        // Tính số ngày bảo hành còn lại
+        let warrantyHtml = '';
+        if (d.addtime && d.yy) {
+          const addDate = new Date(d.addtime);
+          const warrantyDays = parseInt(d.yy) || 0;
+          if (warrantyDays > 0) {
+            const expireDate = new Date(addDate.getTime() + warrantyDays * 86400000);
+            const remainDays = Math.ceil((expireDate - Date.now()) / 86400000);
+            if (remainDays > 0) {
+              warrantyHtml = `<div style="margin-top:6px;color:#2563eb;font-weight:600">🛡️ Bảo hành: còn ${remainDays} ngày (gói ${warrantyDays} ngày)</div>`;
+            } else {
+              warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">⏰ Hết bảo hành</div>`;
+            }
+          }
+        }
+        // Nếu không có yy, tính từ type (秒出 = có thể là gói 40 ngày mặc định)
+        if (!warrantyHtml && d.addtime) {
+          const addDate = new Date(d.addtime);
+          const daysSince = Math.floor((Date.now() - addDate) / 86400000);
+          warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">📅 Đã sử dụng ${daysSince} ngày</div>`;
+        }
+
+        html += `<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px;border:1px solid #e5e7eb">
+          <div style="font-weight:700;font-size:14px">${d.pname || 'Thiết bị'}</div>
+          <div style="color:var(--muted);margin-top:6px">Loại: <strong>${d.type || '—'}</strong></div>
+          <div style="margin-top:4px">Trạng thái: <span style="color:${stateColor};font-weight:700">${stateText}</span></div>
+          <div style="color:var(--muted);margin-top:4px">Ngày thêm: ${d.addtime || '—'}</div>
+          ${warrantyHtml}`;
+
+        // Nút yêu cầu bảo hành nếu bị thu hồi
+        if (isDown) {
+          const udidShort = d.udid ? d.udid.substring(0, 12) + '...' : '';
+          const warrantyMsg = encodeURIComponent(`🛡️ YÊU CẦU BẢO HÀNH\n\nUDID: ${d.udid}\nTên: ${d.pname}\nNgày thêm: ${d.addtime}\nTrạng thái: Đã bị thu hồi\n\nVui lòng cấp lại chứng chỉ.`);
+          html += `<div style="margin-top:10px">
+            <a href="https://t.me/PHUONGIOSVIET?text=${warrantyMsg}" target="_blank" class="btn btn-danger btn-block" style="padding:11px;text-decoration:none;font-size:13px">
+              <i class="fas fa-shield-alt"></i> Yêu cầu bảo hành
+            </a>
+            <p style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Gửi yêu cầu qua Telegram để được cấp chứng chỉ mới</p>
+          </div>`;
+        }
+
+        html += '</div>';
       });
       html += '</div>';
       box.innerHTML = html;
