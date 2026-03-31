@@ -288,10 +288,16 @@ async function loadProducts() {
 }
 
 function productCard(p, type) {
-  const icons = { FF:'🔫', LQ:'⚔️', BBP:'🎱', BBPI:'🎱', CF:'🔥', CERT7:'🍎', CERT30:'🍎', CERT90:'🍎' };
+  const iconMap = {
+    FF: 'images/freefire.png', LQ: 'images/lienquan.png',
+    BBP: 'images/8ballpool.png', BBPI: 'images/8ballpool.png',
+    CF: 'images/crossfire.png',
+    CERT7: 'images/apple-cert.png', CERT30: 'images/apple-cert.png', CERT90: 'images/apple-cert.png'
+  };
+  const img = iconMap[p.id] || (type === 'cert' ? 'images/apple-cert.png' : 'images/freefire.png');
   return `<div class="product-card">
     <div class="product-header">
-      <div class="product-icon ${type}">${icons[p.id] || (type === 'cert' ? '🍎' : '🎮')}</div>
+      <div class="product-icon ${type}"><img src="${img}" alt="${p.name}"></div>
       <div><div class="product-name">${p.name}</div><div class="product-cat">${p.category === 'cert' ? 'Apple Certificate' : 'Key hack game'}</div></div>
     </div>
     <p class="product-desc">${p.desc}</p>
