@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — PHUONGIOS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-login { max-width:400px; margin:60px auto; padding:20px; }
+    .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:24px; }
+    .admin-stat { background:var(--card); padding:16px; border-radius:12px; box-shadow:var(--shadow-sm); text-align:center; }
+    .admin-stat .num { font-size:22px; font-weight:800; color:var(--primary); }
+    .admin-stat .lbl { font-size:11px; color:var(--muted); margin-top:4px; }
+    .tab-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+    .tab-btn { padding:8px 16px; border-radius:8px; border:1.5px solid var(--border); background:#fff; font-size:13px; font-weight:600; cursor:pointer; font-family:'Be Vietnam Pro',sans-serif; }
+    .tab-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .admin-panel { display:none; }
+    .admin-panel.active { display:block; }
+    .key-form { background:var(--card); padding:20px; border-radius:12px; box-shadow:var(--shadow-sm); margin-bottom:20px; }
+    .key-form h3 { font-size:15px; font-weight:700; margin-bottom:14px; }
+    .key-form textarea { width:100%; min-height:100px; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-family:monospace; font-size:13px; resize:vertical; }
+    .key-form select { width:100%; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; margin-bottom:10px; font-family:'Be Vietnam Pro',sans-serif; }
+    .mini-table { font-size:12px; }
+    .mini-table th, .mini-table td { padding:8px 10px; }
+    .edit-price { width:90px; padding:4px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; text-align:right; font-family:'Be Vietnam Pro',sans-serif; }
+    .del-btn { background:var(--red); color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:11px; }
+    .save-btn { background:var(--green); color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+    .balance-input { width:100px; padding:4px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; text-align:right; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <a href="index.html" class="logo"><img src="images/logo.png" alt="PHUONGIOS"></a>
+    <div class="header-right">
+      <span style="font-size:13px;font-weight:700;color:var(--red)"><i class="fas fa-shield-halved"></i> ADMIN</span>
+      <button class="btn btn-danger btn-sm" onclick="logout()" id="btn-logout" style="display:none"><i class="fas fa-sign-out-alt"></i> Thoát</button>
+    </div>
+  </div>
+</header>
+
+<div class="container" style="padding:20px 20px 60px">
+
+  <!-- LOGIN -->
+  <div id="login-section" class="admin-login">
+    <div class="card">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:18px;text-align:center"><i class="fas fa-lock" style="color:var(--primary)"></i> Admin Panel</h2>
+      <div class="form-group">
+        <label>Mật khẩu Admin</label>
+        <div class="input-icon">
+          <i class="fas fa-key"></i>
+          <input type="password" class="form-control" id="admin-pw" placeholder="Nhập mật khẩu admin" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doAdminLogin()" id="btn-admin-login">
+        <i class="fas fa-sign-in-alt"></i> Đăng nhập
+      </button>
+      <div class="form-error" id="admin-err" style="text-align:center;margin-top:10px">Sai mật khẩu</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="admin-dashboard" style="display:none">
+
+    <div class="admin-grid" id="stats-grid"></div>
+
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="showPanel('products',this)"><i class="fas fa-tag"></i> Sản phẩm & Giá</button>
+      <button class="tab-btn" onclick="showPanel('keys',this)"><i class="fas fa-key"></i> Kho Key</button>
+      <button class="tab-btn" onclick="showPanel('orders',this)"><i class="fas fa-list"></i> Đơn hàng</button>
+      <button class="tab-btn" onclick="showPanel('users',this)"><i class="fas fa-users"></i> Users</button>
+      <button class="tab-btn" onclick="showPanel('deposits',this)"><i class="fas fa-wallet"></i> Nạp tiền</button>
+    </div>
+
+    <!-- SẢN PHẨM & GIÁ -->
+    <div class="admin-panel active" id="panel-products">
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>ID</th><th>Tên</th><th>Loại</th><th>Giá (đ)</th><th>Mô tả</th><th></th></tr></thead>
+          <tbody id="products-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KHO KEY -->
+    <div class="admin-panel" id="panel-keys">
+      <div class="key-form">
+        <h3><i class="fas fa-plus-circle" style="color:var(--green)"></i> Thêm key mới</h3>
+        <select id="key-game">
+          <option value="">-- Chọn sản phẩm --</option>
+        </select>
+        <textarea id="key-list" placeholder="Nhập key, mỗi dòng 1 key:&#10;FF-KEY-001-ABC&#10;FF-KEY-002-DEF&#10;FF-KEY-003-GHI"></textarea>
+        <button class="btn btn-success btn-block" style="margin-top:10px" onclick="addKeys()">
+          <i class="fas fa-plus"></i> Thêm key
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>ID</th><th>Sản phẩm</th><th>Key</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody id="keys-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ĐƠN HÀNG -->
+    <div class="admin-panel" id="panel-orders">
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>Mã đơn</th><th>User</th><th>Sản phẩm</th><th>Tiền</th><th>Key</th><th>Ngày</th></tr></thead>
+          <tbody id="orders-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="admin-panel" id="panel-users">
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Số dư (đ)</th><th></th></tr></thead>
+          <tbody id="users-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NẠP TIỀN -->
+    <div class="admin-panel" id="panel-deposits">
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead><tr><th>Mã nạp</th><th>User</th><th>Số tiền</th><th>Trạng thái</th><th>Ngày</th></tr></thead>
+          <tbody id="deposits-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let adminToken = localStorage.getItem('adminToken');
+
+const API = (url, opts = {}) => fetch(url, {
+  ...opts,
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + adminToken, ...opts.headers },
+}).then(r => r.json());
+
+function fmt(n) { return (n || 0).toLocaleString('vi-VN'); }
+
+// ============ LOGIN ============
+if (adminToken) checkAuth();
+
+async function checkAuth() {
+  try {
+    const res = await API('/api/admin/stats');
+    if (res.error) throw new Error();
+    showDashboard();
+  } catch {
+    localStorage.removeItem('adminToken');
+    adminToken = null;
+  }
+}
+
+async function doAdminLogin() {
+  const pw = document.getElementById('admin-pw').value;
+  if (!pw) return;
+
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      document.getElementById('admin-err').classList.add('show');
+      setTimeout(() => document.getElementById('admin-err').classList.remove('show'), 3000);
+      return;
+    }
+    adminToken = data.token;
+    localStorage.setItem('adminToken', adminToken);
+    showDashboard();
+  } catch {
+    showToast('Lỗi kết nối', 'error');
+  }
+}
+
+function showDashboard() {
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('admin-dashboard').style.display = 'block';
+  document.getElementById('btn-logout').style.display = 'inline-flex';
+  loadStats();
+  loadProducts();
+}
+
+function logout() {
+  localStorage.removeItem('adminToken');
+  adminToken = null;
+  location.reload();
+}
+
+// ============ TABS ============
+function showPanel(name, btn) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  if (name === 'keys') loadKeys();
+  if (name === 'orders') loadOrders();
+  if (name === 'users') loadUsers();
+  if (name === 'deposits') loadDeposits();
+  if (name === 'products') loadProducts();
+}
+
+// ============ STATS ============
+async function loadStats() {
+  const s = await API('/api/admin/stats');
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="admin-stat"><div class="num">${s.totalUsers}</div><div class="lbl">Users</div></div>
+    <div class="admin-stat"><div class="num">${s.totalOrders}</div><div class="lbl">Đơn hàng</div></div>
+    <div class="admin-stat"><div class="num" style="color:var(--green)">${fmt(s.totalRevenue)}đ</div><div class="lbl">Doanh thu</div></div>
+    <div class="admin-stat"><div class="num" style="color:var(--orange)">${fmt(s.totalDeposits)}đ</div><div class="lbl">Đã nạp</div></div>
+    <div class="admin-stat"><div class="num" style="color:var(--purple)">${s.availableKeys}</div><div class="lbl">Key còn</div></div>
+  `;
+}
+
+// ============ PRODUCTS ============
+async function loadProducts() {
+  const products = await API('/api/admin/products');
+  document.getElementById('products-table').innerHTML = products.map(p => `
+    <tr>
+      <td><strong>${p.id}</strong></td>
+      <td>${p.name}</td>
+      <td><span class="badge ${p.category === 'game' ? 'badge-info' : 'badge-purple'}">${p.category}</span></td>
+      <td><input class="edit-price" id="price-${p.id}" value="${p.price}"></td>
+      <td><input class="edit-price" style="width:200px;text-align:left" id="desc-${p.id}" value="${p.desc}"></td>
+      <td><button class="save-btn" onclick="saveProduct('${p.id}')"><i class="fas fa-save"></i></button></td>
+    </tr>
+  `).join('');
+
+  // Update key form dropdown
+  const select = document.getElementById('key-game');
+  select.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' +
+    products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+}
+
+async function saveProduct(id) {
+  const price = parseInt(document.getElementById('price-' + id).value) || 0;
+  const desc = document.getElementById('desc-' + id).value;
+  const res = await API('/api/admin/products/' + id + '/update', {
+    method: 'POST', body: JSON.stringify({ price, desc }),
+  });
+  if (res.success) {
+    showToast('Đã cập nhật ' + id, 'success');
+    loadStats();
+  } else {
+    showToast(res.error, 'error');
+  }
+}
+
+// ============ KEYS ============
+async function loadKeys() {
+  const keys = await API('/api/admin/keys');
+  document.getElementById('keys-table').innerHTML = keys.map(k => `
+    <tr>
+      <td>${k.id}</td>
+      <td style="font-size:12px">${k.game_name}</td>
+      <td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k.key_code}</td>
+      <td><span class="badge ${k.status === 'available' ? 'badge-success' : 'badge-danger'}">${k.status === 'available' ? 'Còn' : 'Đã bán'}</span></td>
+      <td>${k.status === 'available' ? `<button class="del-btn" onclick="deleteKey(${k.id})"><i class="fas fa-trash"></i></button>` : ''}</td>
+    </tr>
+  `).join('');
+}
+
+async function addKeys() {
+  const game_name = document.getElementById('key-game').value;
+  const keys = document.getElementById('key-list').value;
+  if (!game_name) return showToast('Chọn sản phẩm', 'error');
+  if (!keys.trim()) return showToast('Nhập key', 'error');
+
+  const res = await API('/api/admin/keys', {
+    method: 'POST', body: JSON.stringify({ game_name, keys }),
+  });
+  if (res.success) {
+    showToast('Đã thêm ' + res.added + ' key!', 'success');
+    document.getElementById('key-list').value = '';
+    loadKeys();
+    loadStats();
+  } else {
+    showToast(res.error, 'error');
+  }
+}
+
+async function deleteKey(id) {
+  if (!confirm('Xoá key này?')) return;
+  await API('/api/admin/keys/' + id, { method: 'DELETE' });
+  showToast('Đã xoá', 'success');
+  loadKeys();
+  loadStats();
+}
+
+// ============ ORDERS ============
+async function loadOrders() {
+  const orders = await API('/api/admin/orders');
+  document.getElementById('orders-table').innerHTML = orders.map(o => `
+    <tr>
+      <td><strong>${o.order_code}</strong></td>
+      <td>${o.username || '?'}</td>
+      <td style="font-size:12px">${o.product_name}</td>
+      <td style="font-weight:700">${fmt(o.amount)}đ</td>
+      <td style="font-family:monospace;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.key_code || '—'}</td>
+      <td style="font-size:11px">${new Date(o.created_at).toLocaleString('vi-VN')}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ USERS ============
+async function loadUsers() {
+  const users = await API('/api/admin/users');
+  document.getElementById('users-table').innerHTML = users.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td style="font-size:12px">${u.email}</td>
+      <td><input class="balance-input" id="bal-${u.id}" value="${u.balance}"></td>
+      <td><button class="save-btn" onclick="saveBalance(${u.id})"><i class="fas fa-save"></i></button></td>
+    </tr>
+  `).join('');
+}
+
+async function saveBalance(id) {
+  const balance = parseInt(document.getElementById('bal-' + id).value) || 0;
+  const res = await API('/api/admin/users/' + id + '/balance', {
+    method: 'POST', body: JSON.stringify({ balance }),
+  });
+  if (res.success) {
+    showToast('Đã cập nhật số dư', 'success');
+    loadStats();
+  }
+}
+
+// ============ DEPOSITS ============
+async function loadDeposits() {
+  const deps = await API('/api/admin/deposits');
+  document.getElementById('deposits-table').innerHTML = deps.map(d => `
+    <tr>
+      <td><strong>${d.deposit_code}</strong></td>
+      <td>${d.username || '?'}</td>
+      <td style="font-weight:700;color:var(--green)">${fmt(d.amount)}đ</td>
+      <td><span class="badge ${d.status === 'completed' ? 'badge-success' : 'badge-warning'}">${d.status === 'completed' ? 'Thành công' : 'Chờ'}</span></td>
+      <td style="font-size:11px">${new Date(d.created_at).toLocaleString('vi-VN')}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ UTILS ============
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

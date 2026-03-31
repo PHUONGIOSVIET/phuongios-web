@@ -34,6 +34,7 @@ const CONFIG = {
     { id: 'CERT90',category: 'cert', name: 'Chứng chỉ Apple 90 ngày', price: 350000, desc: 'Apple Developer Certificate 90 ngày, tiết kiệm nhất.' },
   ],
   POLL_INTERVAL: 15000,
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'phuongios@admin2026',
 };
 
 const app = express();
@@ -519,6 +520,129 @@ async function pollDeposits() {
     console.error('[POLL]', e.message);
   }
 }
+
+// ============================================================
+//  ADMIN API
+// ============================================================
+function adminAuth(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Chưa đăng nhập admin' });
+  try {
+    const decoded = jwt.verify(token, CONFIG.JWT_SECRET);
+    if (!decoded.isAdmin) return res.status(403).json({ error: 'Không có quyền admin' });
+    req.admin = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Token hết hạn' });
+  }
+}
+
+// Admin login
+app.post('/api/admin/login', rateLimit('admin-login', 5, 300000), (req, res) => {
+  const { password } = req.body;
+  if (password !== CONFIG.ADMIN_PASSWORD) return res.status(401).json({ error: 'Sai mật khẩu admin' });
+  const token = jwt.sign({ isAdmin: true }, CONFIG.JWT_SECRET, { expiresIn: '24h' });
+  res.json({ token });
+});
+
+// Dashboard stats
+app.get('/api/admin/stats', adminAuth, async (req, res) => {
+  const users = await db('SELECT COUNT(*) as cnt FROM web_users');
+  const orders = await db('SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total FROM web_orders');
+  const deposits = await db('SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total FROM web_deposits WHERE status="completed"');
+  const keys = await db('SELECT COUNT(*) as cnt FROM key_stock WHERE status="available"');
+  res.json({
+    totalUsers: users?.[0]?.cnt || 0,
+    totalOrders: orders?.[0]?.cnt || 0,
+    totalRevenue: orders?.[0]?.total || 0,
+    totalDeposits: deposits?.[0]?.total || 0,
+    availableKeys: keys?.[0]?.cnt || 0,
+  });
+});
+
+// Danh sách users
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+  const users = await db('SELECT id, username, email, balance, created_at FROM web_users ORDER BY id DESC LIMIT 100');
+  res.json(users || []);
+});
+
+// Sửa balance user
+app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
+  const { balance } = req.body;
+  if (balance === undefined || balance < 0) return res.status(400).json({ error: 'Balance không hợp lệ' });
+  await db('UPDATE web_users SET balance = ? WHERE id = ?', [balance, req.params.id]);
+  res.json({ success: true });
+});
+
+// Danh sách đơn hàng
+app.get('/api/admin/orders', adminAuth, async (req, res) => {
+  const orders = await db(`SELECT o.*, u.username FROM web_orders o
+    LEFT JOIN web_users u ON o.user_id = u.id
+    ORDER BY o.created_at DESC LIMIT 100`);
+  res.json(orders || []);
+});
+
+// Danh sách key stock
+app.get('/api/admin/keys', adminAuth, async (req, res) => {
+  const keys = await db('SELECT * FROM key_stock ORDER BY id DESC LIMIT 200');
+  res.json(keys || []);
+});
+
+// Thêm key
+app.post('/api/admin/keys', adminAuth, async (req, res) => {
+  const { game_name, keys } = req.body;
+  if (!game_name || !keys) return res.status(400).json({ error: 'Thiếu thông tin' });
+
+  const keyList = keys.split('\n').map(k => k.trim()).filter(k => k.length > 0);
+  if (keyList.length === 0) return res.status(400).json({ error: 'Không có key nào' });
+
+  let added = 0;
+  for (const key of keyList) {
+    const result = await db('INSERT INTO key_stock (game_name, key_code, status) VALUES (?, ?, "available")', [game_name, key]);
+    if (result) added++;
+  }
+  res.json({ success: true, added });
+});
+
+// Xoá key
+app.delete('/api/admin/keys/:id', adminAuth, async (req, res) => {
+  await db('DELETE FROM key_stock WHERE id = ?', [req.params.id]);
+  res.json({ success: true });
+});
+
+// Lấy sản phẩm + giá hiện tại
+app.get('/api/admin/products', adminAuth, (req, res) => {
+  res.json(CONFIG.PRODUCTS);
+});
+
+// Sửa giá sản phẩm
+app.post('/api/admin/products/:id/price', adminAuth, (req, res) => {
+  const { price } = req.body;
+  if (!price || price < 0) return res.status(400).json({ error: 'Giá không hợp lệ' });
+  const product = CONFIG.PRODUCTS.find(p => p.id === req.params.id);
+  if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+  product.price = price;
+  res.json({ success: true, product });
+});
+
+// Sửa mô tả sản phẩm
+app.post('/api/admin/products/:id/update', adminAuth, (req, res) => {
+  const { price, desc, name } = req.body;
+  const product = CONFIG.PRODUCTS.find(p => p.id === req.params.id);
+  if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+  if (price !== undefined) product.price = price;
+  if (desc) product.desc = desc;
+  if (name) product.name = name;
+  res.json({ success: true, product });
+});
+
+// Danh sách nạp tiền
+app.get('/api/admin/deposits', adminAuth, async (req, res) => {
+  const deposits = await db(`SELECT d.*, u.username FROM web_deposits d
+    LEFT JOIN web_users u ON d.user_id = u.id
+    ORDER BY d.created_at DESC LIMIT 100`);
+  res.json(deposits || []);
+});
 
 // ============================================================
 //  HEALTH (ẩn thông tin nhạy cảm)
