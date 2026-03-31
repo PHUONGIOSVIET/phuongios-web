@@ -313,7 +313,33 @@ async function activateCert() {
           <i class="fas fa-file-alt"></i> Tải Mobileprovision
         </a>`;
       }
-      html += '<p style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">Bấm "Cài đặt Esign ngay" trên Safari để cài trực tiếp</p>';
+      html += `<div style="margin-top:14px;background:#f0f9ff;border:1.5px solid #93c5fd;border-radius:12px;padding:14px">
+        <p style="font-weight:700;font-size:14px;color:#1d4ed8;margin-bottom:10px;text-align:center"><i class="fas fa-info-circle"></i> Hướng dẫn cài đặt Esign</p>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#4facfe,#00f2fe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="color:#fff;font-size:18px;font-style:italic;font-weight:700">E</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5">
+            <strong>Bước 1:</strong> Bấm nút <strong style="color:#16a34a">"Cài đặt Esign ngay"</strong> ở trên
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fab fa-apple" style="color:#fff;font-size:22px"></i>
+          </div>
+          <div style="font-size:13px;line-height:1.5">
+            <strong>Bước 2:</strong> Bấm nút <strong style="color:#22c55e"> 点击安装</strong> (nút xanh có logo Apple) để cài đặt
+          </div>
+        </div>
+        <div style="font-size:13px;display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas fa-cog" style="color:#fff;font-size:20px"></i>
+          </div>
+          <div style="line-height:1.5">
+            <strong>Bước 3:</strong> Vào <strong>Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị</strong> → Tin cậy chứng chỉ
+          </div>
+        </div>
+      </div>`;
       html += '</div>';
       box.innerHTML = html;
       showToast('Kích hoạt thành công!', 'success');
