@@ -209,6 +209,12 @@ app.post('/api/cert/activate', rateLimit('cert-activate', 5, 60000), async (req,
   adminLog('cert_activate', `UDID: ${udid.substring(0, 8)}... | Code: ${code.substring(0, 6)}... | Result: ${result.msg}`, req.ip);
   res.json(result);
 });
+// Thư mục uploads nằm NGOÀI git repo → không bị xóa khi git reset
+const fs = require('fs');
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads', express.static(UPLOADS_DIR));
+
 app.use(express.static(path.join(__dirname, 'phuongios')));
 
 // ============================================================
@@ -397,7 +403,7 @@ async function getProducts() {
     name: p.name,
     price: p.price,
     desc: p.description,
-    icon: p.icon || '',
+    icon: p.icon || '',  // full path: "uploads/prod_xx.png" hoặc "" nếu chưa có
     priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
   }));
 }
@@ -806,23 +812,15 @@ app.post('/api/admin/products/:id/icon', adminAuth, async (req, res) => {
   if (imageData.length > 512 * 1024) return res.status(400).json({ error: 'Ảnh quá lớn (tối đa 500KB)' });
 
   const filename = `prod_${req.params.id.toLowerCase()}.${ext}`;
-  const fs = require('fs');
 
-  // Lưu vào phuongios/images/
-  const dir1 = path.join(__dirname, 'phuongios', 'images');
-  if (!fs.existsSync(dir1)) fs.mkdirSync(dir1, { recursive: true });
-  fs.writeFileSync(path.join(dir1, filename), imageData);
+  // Lưu vào UPLOADS_DIR (ngoài git repo, không bao giờ bị git reset --hard xóa)
+  fs.writeFileSync(path.join(UPLOADS_DIR, filename), imageData);
 
-  // Lưu vào public_html/images/ nếu tồn tại
-  const dir2 = path.join(__dirname, '..', 'public_html', 'images');
-  if (fs.existsSync(path.join(__dirname, '..', 'public_html'))) {
-    if (!fs.existsSync(dir2)) fs.mkdirSync(dir2, { recursive: true });
-    fs.writeFileSync(path.join(dir2, filename), imageData);
-  }
-
-  await db('UPDATE web_products SET icon = ? WHERE id = ?', [filename, req.params.id]);
-  adminLog('upload_icon', `${req.params.id}: ${filename}`, req.ip);
-  res.json({ success: true, filename });
+  // Lưu path đầy đủ vào DB (uploads/prod_xx.png)
+  const iconPath = 'uploads/' + filename;
+  await db('UPDATE web_products SET icon = ? WHERE id = ?', [iconPath, req.params.id]);
+  adminLog('upload_icon', `${req.params.id}: ${iconPath}`, req.ip);
+  res.json({ success: true, icon: iconPath });
 });
 
 // Admin logs
