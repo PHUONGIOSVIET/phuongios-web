@@ -368,7 +368,15 @@ async function doBuy(productId) {
       </div>
       <p style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">KEY CỦA BẠN (click để copy):</p>
       <div class="key-box" onclick="copyKey(this)">${data.key_code}</div>
-      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="closeBuyModal();loadProducts()">Đóng</button>
+      ${productId.startsWith('CERT') ? `
+      <a href="/udid.html?autokey=${encodeURIComponent(data.key_code)}"
+         class="btn btn-success btn-block"
+         style="margin-top:14px;padding:14px;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="fab fa-apple"></i> Lấy UDID &amp; Cài Đặt
+      </a>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Bấm để lấy UDID và kích hoạt chứng chỉ ngay</p>
+      ` : ''}
+      <button class="btn btn-outline btn-block" style="margin-top:10px" onclick="closeBuyModal();loadProducts()">Đóng</button>
     `;
 
     currentUser.balance = data.balance;

@@ -205,6 +205,12 @@
 <script>
 const params = new URLSearchParams(window.location.search);
 const udid = params.get('udid');
+// Tự động điền key nếu được chuyển từ trang mua hàng
+const autoKey = params.get('autokey');
+if (autoKey) {
+  // Lưu tạm, sẽ điền sau khi DOM sẵn sàng
+  window._autoKey = autoKey;
+}
 
 if (udid && udid !== '' && udid !== 'unknown') {
   // Hiển thị kết quả
@@ -212,6 +218,21 @@ if (udid && udid !== '' && udid !== 'unknown') {
   document.getElementById('udid-result').style.display = 'block';
 
   document.getElementById('udid-text').textContent = udid;
+
+  // Tự động điền key từ trang mua hàng
+  if (window._autoKey) {
+    const certCodeInput = document.getElementById('cert-code');
+    if (certCodeInput) {
+      certCodeInput.value = window._autoKey;
+      // Cuộn xuống phần kích hoạt
+      setTimeout(() => {
+        certCodeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight input
+        certCodeInput.style.borderColor = 'var(--green)';
+        certCodeInput.style.boxShadow = '0 0 0 3px rgba(34,197,94,0.2)';
+      }, 600);
+    }
+  }
 
   const product = params.get('product') || '—';
   const version = params.get('version') || '—';
