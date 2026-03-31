@@ -198,13 +198,12 @@ async function initDB() {
     icon VARCHAR(20) DEFAULT '',
     sort_order INT DEFAULT 0
   )`);
-  // Convert bảng sang utf8mb4 + fix encoding lỗi
+  // Convert bảng sang utf8mb4 + fix encoding lỗi (giữ nguyên giá đã sửa)
   await db('ALTER TABLE web_products CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-  // Kiểm tra encoding lỗi (có ký tự "?" trong tên tiếng Việt) → xóa và seed lại
-  const checkEnc = await db("SELECT name FROM web_products WHERE name LIKE '%?%' OR name LIKE '%Ch?ng%' LIMIT 1");
-  if (checkEnc && checkEnc.length > 0) {
-    await db('DELETE FROM web_products');
-    console.log('[DB] Xóa sản phẩm encoding lỗi, seed lại...');
+  // Fix tên/mô tả bị lỗi encoding nhưng GIỮ NGUYÊN giá
+  for (const p of CONFIG.PRODUCTS) {
+    await db('UPDATE web_products SET name = ?, description = ? WHERE id = ? AND (name LIKE "%?%" OR description LIKE "%?%")',
+      [p.name, p.desc, p.id]);
   }
   // Fix key_stock encoding lỗi: cập nhật game_name bị lỗi sang tên đúng
   await db('ALTER TABLE key_stock CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
