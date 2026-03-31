@@ -10,7 +10,7 @@ const crypto = require('crypto');
 
 const CONFIG = {
   PORT: process.env.PORT || 4000,
-  JWT_SECRET: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
+  JWT_SECRET: process.env.JWT_SECRET || 'phuongios_jwt_secret_2026_fixed_key',
   DB: {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'jsphuon_shopkey',
@@ -206,6 +206,21 @@ async function initDB() {
     await db('DELETE FROM web_products');
     console.log('[DB] Xóa sản phẩm encoding lỗi, seed lại...');
   }
+  // Fix key_stock encoding lỗi: cập nhật game_name bị lỗi sang tên đúng
+  await db('ALTER TABLE key_stock CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+  const fixMap = {
+    'Ch_ng ch_ Apple 7 ng_y': 'Chứng chỉ Apple 7 ngày',
+    'Ch_ng ch_ Apple 30 ng_y': 'Chứng chỉ Apple 30 ngày',
+    'Ch_ng ch_ Apple 90 ng_y': 'Chứng chỉ Apple 90 ngày',
+  };
+  // Fix bằng LIKE pattern cho cert keys bị lỗi encoding
+  await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%7 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 7 ngày', 'Chứng chỉ Apple 7 ngày']);
+  await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%30 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 30 ngày', 'Chứng chỉ Apple 30 ngày']);
+  await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%90 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 90 ngày', 'Chứng chỉ Apple 90 ngày']);
+  // Fix các game có tên tiếng Việt bị lỗi
+  await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%Li%n Qu%n%' AND game_name != ?", ['Liên Quân Mobile', 'Liên Quân Mobile']);
+  const fixed = await db("SELECT ROW_COUNT() as cnt");
+  if (fixed && fixed[0]?.cnt > 0) console.log('[DB] Đã fix encoding key_stock');
   // Seed sản phẩm mặc định nếu bảng trống
   const existing = await db('SELECT COUNT(*) as cnt FROM web_products');
   if (existing && existing[0].cnt === 0) {
@@ -302,7 +317,7 @@ app.post('/api/auth/register', rateLimit('register', 5, 300000), async (req, res
   const result = await db('INSERT INTO web_users (username, email, password) VALUES (?, ?, ?)', [username, email, hash]);
   if (!result) return res.status(500).json({ error: 'Lỗi tạo tài khoản' });
 
-  const token = jwt.sign({ id: result.insertId, username }, CONFIG.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: result.insertId, username }, CONFIG.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, user: { id: result.insertId, username, email, balance: 0 } });
 });
 
@@ -318,7 +333,7 @@ app.post('/api/auth/login', rateLimit('login', 10, 300000), async (req, res) => 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: 'Sai tài khoản hoặc mật khẩu' });
 
-  const token = jwt.sign({ id: user.id, username: user.username }, CONFIG.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user.id, username: user.username }, CONFIG.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, user: { id: user.id, username: user.username, email: user.email, balance: user.balance } });
 });
 
