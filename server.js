@@ -33,6 +33,8 @@ const CONFIG = {
     { id: 'CERT30',category: 'cert', name: 'Chứng chỉ Apple 30 ngày', price: 150000, desc: 'Apple Developer Certificate 30 ngày, ổn định.' },
     { id: 'CERT90',category: 'cert', name: 'Chứng chỉ Apple 90 ngày', price: 350000, desc: 'Apple Developer Certificate 90 ngày, tiết kiệm nhất.' },
   ],
+  GEEKSIGN_SITE: process.env.GEEKSIGN_SITE || 'iosviet',
+  GEEKSIGN_API: 'https://devcs.diannaozy.top/api/ipasign',
   POLL_INTERVAL: 15000,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'phuongios@admin2026',
 };
@@ -165,6 +167,48 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
 });
 
 app.use(express.json({ limit: '10kb' }));
+
+// ============================================================
+//  GEEKSIGN CERT API (proxy to hide site ID)
+// ============================================================
+const https = require('https');
+
+function geeksignPost(endpoint, params) {
+  return new Promise((resolve, reject) => {
+    const postData = new URLSearchParams({ ...params, site: CONFIG.GEEKSIGN_SITE }).toString();
+    const url = new URL(CONFIG.GEEKSIGN_API + endpoint);
+    const options = {
+      hostname: url.hostname, path: url.pathname, method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ code: -1, msg: 'Lỗi phản hồi' }); } });
+    });
+    req.on('error', () => resolve({ code: -1, msg: 'Không kết nối được' }));
+    req.setTimeout(15000, () => { req.destroy(); resolve({ code: -1, msg: 'Hết thời gian kết nối' }); });
+    req.write(postData);
+    req.end();
+  });
+}
+
+// Kiểm tra trạng thái UDID/key
+app.post('/api/cert/check', rateLimit('cert-check', 10, 60000), async (req, res) => {
+  const { value } = req.body || {};
+  if (!value || value.length < 5) return res.status(400).json({ error: 'Thiếu thông tin' });
+  const result = await geeksignPost('/checkStatus', { value });
+  res.json(result);
+});
+
+// Kích hoạt chứng chỉ
+app.post('/api/cert/activate', rateLimit('cert-activate', 5, 60000), async (req, res) => {
+  const { udid, code, appid } = req.body || {};
+  if (!udid || !code) return res.status(400).json({ error: 'Thiếu UDID hoặc mã kích hoạt' });
+  const result = await geeksignPost('', { udid, code, appid: appid || '0' });
+  adminLog('cert_activate', `UDID: ${udid.substring(0, 8)}... | Code: ${code.substring(0, 6)}... | Result: ${result.msg}`, req.ip);
+  res.json(result);
+});
 app.use(express.static(path.join(__dirname, 'phuongios')));
 
 // ============================================================

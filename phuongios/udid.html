@@ -104,8 +104,42 @@
         <i class="fas fa-copy"></i> Copy UDID
       </button>
 
-      <a href="https://t.me/PHUONGIOSVIET" target="_blank" class="btn btn-success btn-block" style="padding:13px;text-decoration:none">
-        <i class="fab fa-telegram"></i> Gửi UDID qua Telegram
+      <!-- KÍCH HOẠT CHỨNG CHỈ -->
+      <div style="margin-top:24px;padding-top:24px;border-top:2px solid #f0f0f0">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:14px;text-align:center">
+          <i class="fab fa-apple" style="color:var(--purple)"></i> Kích hoạt chứng chỉ Apple
+        </h3>
+        <div class="form-group">
+          <label style="font-size:13px;font-weight:600">Mã kích hoạt (Key chứng chỉ)</label>
+          <div class="input-icon">
+            <i class="fas fa-key"></i>
+            <input type="text" class="form-control" id="cert-code" placeholder="Nhập mã key chứng chỉ đã mua">
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="font-size:13px;font-weight:600">Loại ký</label>
+          <select class="form-control" id="cert-appid" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;width:100%">
+            <option value="0">Chỉ tải chứng chỉ</option>
+            <option value="2" selected>Cài Esign (轻松签)</option>
+            <option value="1">Cài toàn bộ (全能签)</option>
+          </select>
+        </div>
+        <button class="btn btn-success btn-block" style="padding:13px;font-size:15px" onclick="activateCert()" id="btn-activate">
+          <i class="fas fa-certificate"></i> Kích hoạt chứng chỉ
+        </button>
+        <div id="cert-result" style="display:none;margin-top:14px"></div>
+      </div>
+
+      <!-- KIỂM TRA TRẠNG THÁI -->
+      <div style="margin-top:20px;padding-top:20px;border-top:2px solid #f0f0f0">
+        <button class="btn btn-outline btn-block" style="padding:11px" onclick="checkStatus()">
+          <i class="fas fa-search"></i> Kiểm tra trạng thái chứng chỉ
+        </button>
+        <div id="status-result" style="display:none;margin-top:14px"></div>
+      </div>
+
+      <a href="https://t.me/PHUONGIOSVIET" target="_blank" class="btn btn-block" style="padding:13px;text-decoration:none;margin-top:14px;background:#2196f3;color:#fff">
+        <i class="fab fa-telegram"></i> Hỗ trợ qua Telegram
       </a>
 
       <div class="info-box" style="margin-top:16px;margin-bottom:0">
@@ -224,6 +258,114 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show ' + (type || '');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ====== KÍCH HOẠT CHỨNG CHỈ ======
+async function activateCert() {
+  const code = document.getElementById('cert-code').value.trim();
+  const appid = document.getElementById('cert-appid').value;
+  const udidVal = document.getElementById('udid-text').textContent;
+
+  if (!code) return showToast('Vui lòng nhập mã kích hoạt', 'error');
+  if (!udidVal) return showToast('Không tìm thấy UDID', 'error');
+
+  const btn = document.getElementById('btn-activate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;vertical-align:middle"></span> Đang kích hoạt...';
+
+  try {
+    const res = await fetch('/api/cert/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ udid: udidVal, code, appid }),
+    });
+    const data = await res.json();
+    const box = document.getElementById('cert-result');
+    box.style.display = 'block';
+
+    if (data.code === 1 || data.code === 0) {
+      // Thành công
+      let html = `<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:16px">
+        <div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> Kích hoạt thành công!</div>`;
+
+      if (data.data && data.data.plist) {
+        html += `<a href="${data.data.plist}" class="btn btn-success btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
+          <i class="fas fa-download"></i> Cài đặt chứng chỉ
+        </a>`;
+      }
+      if (data.data && data.data.sign) {
+        html += `<a href="${data.data.sign}" class="btn btn-primary btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
+          <i class="fas fa-download"></i> Tải file chứng chỉ (.p12)
+        </a>`;
+      }
+      if (data.data && data.data.mobileprovision) {
+        html += `<a href="${data.data.mobileprovision}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none">
+          <i class="fas fa-file-alt"></i> Tải Mobileprovision
+        </a>`;
+      }
+      if (data.msg) html += `<p style="font-size:12px;color:var(--muted);margin-top:8px">${data.msg}</p>`;
+      html += '</div>';
+      box.innerHTML = html;
+      showToast('Kích hoạt thành công!', 'success');
+    } else {
+      // Lỗi
+      const errorMsg = data.msg || data.error || 'Có lỗi xảy ra';
+      box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:14px">
+        <div style="font-weight:700;color:#dc2626"><i class="fas fa-times-circle"></i> ${errorMsg}</div>
+      </div>`;
+      showToast(errorMsg, 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối, vui lòng thử lại', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-certificate"></i> Kích hoạt chứng chỉ';
+}
+
+// ====== KIỂM TRA TRẠNG THÁI ======
+async function checkStatus() {
+  const udidVal = document.getElementById('udid-text').textContent;
+  if (!udidVal) return showToast('Không tìm thấy UDID', 'error');
+
+  const box = document.getElementById('status-result');
+  box.style.display = 'block';
+  box.innerHTML = '<div style="text-align:center;padding:10px"><span class="spinner"></span></div>';
+
+  try {
+    const res = await fetch('/api/cert/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: udidVal }),
+    });
+    const data = await res.json();
+
+    if (data.code === 1 && data.data && data.data.length > 0) {
+      let html = '<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:14px">';
+      html += '<div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> Đã tìm thấy chứng chỉ</div>';
+      data.data.forEach(d => {
+        const stateColor = d.state === '正常' ? '#16a34a' : '#dc2626';
+        const stateText = d.state === '正常' ? 'Hoạt động' : d.state === '已掉' ? 'Đã rớt' : d.state;
+        html += `<div style="background:#fff;border-radius:8px;padding:10px;margin-bottom:8px;font-size:13px">
+          <div><strong>${d.pname || 'Thiết bị'}</strong></div>
+          <div style="color:var(--muted);margin-top:4px">Loại: ${d.type || '—'} | Trạng thái: <span style="color:${stateColor};font-weight:700">${stateText}</span></div>
+          <div style="color:var(--muted);margin-top:2px">Ngày thêm: ${d.addtime || '—'}</div>
+        </div>`;
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    } else if (data.code === 2) {
+      box.innerHTML = `<div style="background:#fff7ed;border:1.5px solid #f59e0b;border-radius:12px;padding:14px">
+        <div style="font-weight:600;color:#d97706"><i class="fas fa-info-circle"></i> Chưa có chứng chỉ nào cho UDID này</div>
+      </div>`;
+    } else {
+      box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:14px">
+        <div style="font-weight:600;color:#dc2626"><i class="fas fa-times-circle"></i> ${data.msg || 'Lỗi kiểm tra'}</div>
+      </div>`;
+    }
+  } catch {
+    box.innerHTML = '<div style="color:var(--red)">Lỗi kết nối</div>';
+  }
 }
 </script>
 </body>
