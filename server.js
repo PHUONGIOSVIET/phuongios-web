@@ -1,50 +1,100 @@
 // ============================================================
-//  PHUONGIOS WEB - Backend Server
+//  PHUONGIOS WEB - Backend Server (Secured)
 // ============================================================
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const crypto = require('crypto');
 
 const CONFIG = {
-  PORT: 4000,
-  JWT_SECRET: 'phuongios_jwt_secret_2026_change_this',
+  PORT: process.env.PORT || 4000,
+  JWT_SECRET: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
   DB: {
-    host: 'localhost',
-    user: 'jsphuon_shopkey',
-    password: 'phuongios.com',
-    database: 'jsphuon_shopkey',
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'jsphuon_shopkey',
+    password: process.env.DB_PASS || 'phuongios.com',
+    database: process.env.DB_NAME || 'jsphuon_shopkey',
   },
-  // Pay2S
-  PAY2S_ACCESS_KEY: 'e2a744f23ce1090427421c6af1df706a80389370589eea69c127c14d661d08b7',
-  PAY2S_SECRET_KEY: 'ee3d851ab35c7cd0164c89ac3a4c648e1f46319cebbe9a4659edb3df2026d340',
+  PAY2S_ACCESS_KEY: process.env.PAY2S_ACCESS_KEY || 'e2a744f23ce1090427421c6af1df706a80389370589eea69c127c14d661d08b7',
+  PAY2S_SECRET_KEY: process.env.PAY2S_SECRET_KEY || 'ee3d851ab35c7cd0164c89ac3a4c648e1f46319cebbe9a4659edb3df2026d340',
+  PAY2S_WEBHOOK_TOKEN: process.env.PAY2S_WEBHOOK_TOKEN || 'cG5y77cVIhAhWGbwUCt3',
   PAY2S_ACCOUNT: '0000154878888',
   STK: '0000154878888',
   NGAN_HANG: 'MBBANK',
-  // Sản phẩm
   PRODUCTS: [
-    // Key Game
     { id: 'FF',    category: 'game', name: 'Free Fire',              price: 150000, desc: 'Key hack Free Fire, auto update, an toàn.' },
     { id: 'LQ',    category: 'game', name: 'Liên Quân Mobile',       price: 150000, desc: 'Key hack Liên Quân, chống ban, bypass mới nhất.' },
     { id: 'BBP',   category: 'game', name: '8 Ball Pool Trollstore', price: 150000, desc: 'Key 8 Ball Pool cài qua Trollstore.' },
     { id: 'BBPI',  category: 'game', name: '8 Ball Pool IPA',        price: 220000, desc: 'Key 8 Ball Pool bản IPA, hỗ trợ mọi iOS.' },
     { id: 'CF',    category: 'game', name: 'Crossfire Legends VNG',  price: 350000, desc: 'Key hack Crossfire Legends, full tính năng.' },
-    // Chứng chỉ Apple
     { id: 'CERT7', category: 'cert', name: 'Chứng chỉ Apple 7 ngày',  price: 50000,  desc: 'Apple Developer Certificate 7 ngày, ký IPA thoải mái.' },
     { id: 'CERT30',category: 'cert', name: 'Chứng chỉ Apple 30 ngày', price: 150000, desc: 'Apple Developer Certificate 30 ngày, ổn định.' },
     { id: 'CERT90',category: 'cert', name: 'Chứng chỉ Apple 90 ngày', price: 350000, desc: 'Apple Developer Certificate 90 ngày, tiết kiệm nhất.' },
   ],
-  // Polling Pay2S
   POLL_INTERVAL: 15000,
 };
 
 const app = express();
 
 // ============================================================
-//  UDID - Phải đặt TRƯỚC express.json() vì callback nhận raw data
+//  SECURITY: Rate Limiter (chống brute force + DDoS)
 // ============================================================
-app.get('/api/udid/profile', (req, res) => {
+const rateLimits = {};
+
+function rateLimit(key, maxRequests, windowMs) {
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const id = key + ':' + ip;
+    const now = Date.now();
+
+    if (!rateLimits[id]) rateLimits[id] = { count: 0, resetAt: now + windowMs };
+
+    if (now > rateLimits[id].resetAt) {
+      rateLimits[id] = { count: 0, resetAt: now + windowMs };
+    }
+
+    rateLimits[id].count++;
+
+    if (rateLimits[id].count > maxRequests) {
+      const retryAfter = Math.ceil((rateLimits[id].resetAt - now) / 1000);
+      res.set('Retry-After', retryAfter);
+      return res.status(429).json({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau ' + retryAfter + ' giây.' });
+    }
+    next();
+  };
+}
+
+// Dọn rác rate limit mỗi 5 phút
+setInterval(() => {
+  const now = Date.now();
+  for (const id in rateLimits) {
+    if (now > rateLimits[id].resetAt) delete rateLimits[id];
+  }
+}, 300000);
+
+// ============================================================
+//  SECURITY: Headers
+// ============================================================
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  });
+  next();
+});
+
+// Rate limit chung: 100 request/phút per IP
+app.use(rateLimit('global', 100, 60000));
+
+// ============================================================
+//  UDID - Phải đặt TRƯỚC express.json()
+// ============================================================
+app.get('/api/udid/profile', rateLimit('udid', 10, 60000), (req, res) => {
   const uuid1 = 'phuongios-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8);
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -105,7 +155,6 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
 
     console.log('[UDID] Device:', product, '| iOS:', version, '| UDID:', udid);
 
-    // Redirect to UDID result page
     const params = new URLSearchParams({ udid, product, version, serial, imei });
     res.status(301).set('Location', '/udid.html?' + params.toString()).send();
   } catch (e) {
@@ -114,7 +163,7 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
   }
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'phuongios')));
 
 // ============================================================
@@ -137,7 +186,6 @@ async function db(sql, params = []) {
 }
 
 async function initDB() {
-  // Users
   await db(`CREATE TABLE IF NOT EXISTS web_users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -146,7 +194,6 @@ async function initDB() {
     balance INT DEFAULT 0,
     created_at DATETIME DEFAULT NOW()
   )`);
-  // Deposits
   await db(`CREATE TABLE IF NOT EXISTS web_deposits (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -155,7 +202,6 @@ async function initDB() {
     status ENUM('pending','completed') DEFAULT 'pending',
     created_at DATETIME DEFAULT NOW()
   )`);
-  // Web orders
   await db(`CREATE TABLE IF NOT EXISTS web_orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -167,7 +213,6 @@ async function initDB() {
     status ENUM('completed','failed') DEFAULT 'completed',
     created_at DATETIME DEFAULT NOW()
   )`);
-  // Key stock (có thể đã có từ bot)
   await db(`CREATE TABLE IF NOT EXISTS key_stock (
     id INT AUTO_INCREMENT PRIMARY KEY,
     game_name VARCHAR(100) NOT NULL,
@@ -193,12 +238,21 @@ function auth(req, res, next) {
 }
 
 // ============================================================
-//  AUTH ROUTES
+//  AUTH ROUTES (rate limited)
 // ============================================================
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', rateLimit('register', 5, 300000), async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
-  if (password.length < 6) return res.status(400).json({ error: 'Mật khẩu tối thiểu 6 ký tự' });
+
+  // Validate username
+  if (username.length < 3 || username.length > 30) return res.status(400).json({ error: 'Username từ 3-30 ký tự' });
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'Username chỉ chứa chữ, số và _' });
+
+  // Validate email
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email không hợp lệ' });
+
+  // Validate password
+  if (password.length < 6 || password.length > 100) return res.status(400).json({ error: 'Mật khẩu từ 6-100 ký tự' });
 
   const exists = await db('SELECT id FROM web_users WHERE username = ? OR email = ?', [username, email]);
   if (exists && exists.length > 0) return res.status(400).json({ error: 'Username hoặc email đã tồn tại' });
@@ -211,7 +265,8 @@ app.post('/api/auth/register', async (req, res) => {
   res.json({ token, user: { id: result.insertId, username, email, balance: 0 } });
 });
 
-app.post('/api/auth/login', async (req, res) => {
+// Login: 10 lần/5 phút per IP (chống brute force)
+app.post('/api/auth/login', rateLimit('login', 10, 300000), async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
 
@@ -250,42 +305,35 @@ app.get('/api/products/:id/stock', async (req, res) => {
 });
 
 // ============================================================
-//  BUY PRODUCT
+//  BUY PRODUCT (rate limited: 5 lần/phút)
 // ============================================================
-app.post('/api/orders/buy', auth, async (req, res) => {
+app.post('/api/orders/buy', auth, rateLimit('buy', 5, 60000), async (req, res) => {
   const { productId } = req.body;
   const product = CONFIG.PRODUCTS.find(p => p.id === productId);
   if (!product) return res.status(400).json({ error: 'Sản phẩm không tồn tại' });
 
-  // Check balance
   const users = await db('SELECT balance FROM web_users WHERE id = ?', [req.user.id]);
   if (!users || users.length === 0) return res.status(400).json({ error: 'User không tồn tại' });
   if (users[0].balance < product.price) return res.status(400).json({ error: 'Số dư không đủ. Vui lòng nạp thêm tiền.' });
 
-  // Check stock
   const stock = await db('SELECT id, key_code FROM key_stock WHERE game_name = ? AND status = ? LIMIT 1', [product.name, 'available']);
   if (!stock || stock.length === 0) return res.status(400).json({ error: 'Hết hàng! Vui lòng quay lại sau.' });
 
   const key = stock[0];
   const orderCode = 'WEB' + Math.floor(100000 + Math.random() * 900000);
 
-  // Deduct balance (atomic)
   const deduct = await db('UPDATE web_users SET balance = balance - ? WHERE id = ? AND balance >= ?', [product.price, req.user.id, product.price]);
   if (!deduct || deduct.affectedRows === 0) return res.status(400).json({ error: 'Số dư không đủ' });
 
-  // Mark key sold
   const markSold = await db('UPDATE key_stock SET status = ? WHERE id = ? AND status = ?', ['sold', key.id, 'available']);
   if (!markSold || markSold.affectedRows === 0) {
-    // Refund
     await db('UPDATE web_users SET balance = balance + ? WHERE id = ?', [product.price, req.user.id]);
     return res.status(400).json({ error: 'Key đã được bán. Vui lòng thử lại.' });
   }
 
-  // Create order
   await db('INSERT INTO web_orders (user_id, order_code, product_id, product_name, amount, key_code) VALUES (?, ?, ?, ?, ?, ?)',
     [req.user.id, orderCode, product.id, product.name, product.price, key.key_code]);
 
-  // Get updated balance
   const updated = await db('SELECT balance FROM web_users WHERE id = ?', [req.user.id]);
 
   res.json({
@@ -309,9 +357,9 @@ app.get('/api/orders', auth, async (req, res) => {
 });
 
 // ============================================================
-//  DEPOSIT - Create QR
+//  DEPOSIT (rate limited: 5 lần/phút)
 // ============================================================
-app.post('/api/deposit/create', auth, async (req, res) => {
+app.post('/api/deposit/create', auth, rateLimit('deposit', 5, 60000), async (req, res) => {
   const { amount } = req.body;
   if (!amount || amount < 10000) return res.status(400).json({ error: 'Số tiền tối thiểu 10.000đ' });
   if (amount > 10000000) return res.status(400).json({ error: 'Số tiền tối đa 10.000.000đ' });
@@ -343,9 +391,16 @@ app.get('/api/deposit/history', auth, async (req, res) => {
 });
 
 // ============================================================
-//  PAY2S WEBHOOK - Credit balance on deposit
+//  PAY2S WEBHOOK (xác thực token)
 // ============================================================
 app.post('/webhook/pay2s', async (req, res) => {
+  // Xác thực webhook token từ Pay2S
+  const webhookToken = req.headers['x-webhook-token'] || req.query.token || '';
+  if (webhookToken !== CONFIG.PAY2S_WEBHOOK_TOKEN) {
+    console.log('[WEBHOOK] Token không hợp lệ:', webhookToken);
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   console.log('[WEBHOOK]', JSON.stringify(req.body));
   res.json({ success: true });
 
@@ -359,7 +414,6 @@ app.post('/webhook/pay2s', async (req, res) => {
       const transferType = trans.transferType || trans.type || 'IN';
       if (transferType !== 'IN') continue;
 
-      // Check for web deposit code (NAP)
       const napMatch = content.match(/NAP\d+/);
       if (napMatch) {
         const depositCode = napMatch[0];
@@ -381,7 +435,6 @@ app.post('/webhook/pay2s', async (req, res) => {
         continue;
       }
 
-      // Check for bot order code (ORD) - forward to bot logic
       const ordMatch = content.match(/ORD\d+/);
       if (ordMatch) {
         console.log('[WEBHOOK] Bot order:', ordMatch[0], '- skip (bot xử lý)');
@@ -395,7 +448,7 @@ app.post('/webhook/pay2s', async (req, res) => {
 app.get('/webhook/pay2s', (req, res) => res.json({ success: true }));
 
 // ============================================================
-//  PAY2S POLLING - Backup for missed webhooks
+//  PAY2S POLLING
 // ============================================================
 let pay2sToken = null;
 let pay2sTokenExp = 0;
@@ -468,10 +521,10 @@ async function pollDeposits() {
 }
 
 // ============================================================
-//  HEALTH
+//  HEALTH (ẩn thông tin nhạy cảm)
 // ============================================================
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', uptime: process.uptime(), time: new Date() });
+  res.json({ status: 'OK' });
 });
 
 // SPA fallback
