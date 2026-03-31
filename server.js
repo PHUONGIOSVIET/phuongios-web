@@ -409,6 +409,7 @@ async function getProducts() {
 }
 
 app.get('/api/products', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json(await getProducts());
 });
 
