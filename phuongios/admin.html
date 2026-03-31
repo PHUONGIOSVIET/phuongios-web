@@ -77,6 +77,26 @@
 
     <!-- SẢN PHẨM & GIÁ -->
     <div class="admin-panel active" id="panel-products">
+      <!-- Form thêm sản phẩm mới -->
+      <div class="key-form" style="margin-bottom:20px">
+        <h3><i class="fas fa-plus-circle" style="color:var(--green)"></i> Thêm sản phẩm mới</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <input class="form-control" id="new-prod-id" placeholder="Mã SP (VD: PT, PUBG...)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Be Vietnam Pro',sans-serif">
+          <input class="form-control" id="new-prod-name" placeholder="Tên sản phẩm" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Be Vietnam Pro',sans-serif">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <select id="new-prod-cat" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Be Vietnam Pro',sans-serif">
+            <option value="game">🎮 Game</option>
+            <option value="cert">🍎 Chứng chỉ</option>
+          </select>
+          <input class="form-control" id="new-prod-price" type="number" placeholder="Giá (đ)" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Be Vietnam Pro',sans-serif">
+        </div>
+        <input class="form-control" id="new-prod-desc" placeholder="Mô tả sản phẩm" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:10px;font-family:'Be Vietnam Pro',sans-serif">
+        <button class="btn btn-success btn-block" onclick="addProduct()">
+          <i class="fas fa-plus"></i> Thêm sản phẩm
+        </button>
+      </div>
+
       <div class="table-wrap">
         <table class="mini-table">
           <thead><tr><th>ID</th><th>Tên</th><th>Loại</th><th>Giá (đ)</th><th>Mô tả</th><th></th></tr></thead>
@@ -245,11 +265,14 @@ async function loadProducts() {
   document.getElementById('products-table').innerHTML = products.map(p => `
     <tr>
       <td><strong>${p.id}</strong></td>
-      <td>${p.name}</td>
+      <td><input class="edit-price" style="width:130px;text-align:left" id="name-${p.id}" value="${p.name}"></td>
       <td><span class="badge ${p.category === 'game' ? 'badge-info' : 'badge-purple'}">${p.category}</span></td>
       <td><input class="edit-price" id="price-${p.id}" value="${p.price}"></td>
       <td><input class="edit-price" style="width:200px;text-align:left" id="desc-${p.id}" value="${p.desc}"></td>
-      <td><button class="save-btn" onclick="saveProduct('${p.id}')"><i class="fas fa-save"></i></button></td>
+      <td style="white-space:nowrap">
+        <button class="save-btn" onclick="saveProduct('${p.id}')" title="Lưu"><i class="fas fa-save"></i></button>
+        <button class="del-btn" onclick="deleteProduct('${p.id}')" title="Xoá" style="margin-left:4px"><i class="fas fa-trash"></i></button>
+      </td>
     </tr>
   `).join('');
 
@@ -262,14 +285,54 @@ async function loadProducts() {
 async function saveProduct(id) {
   const price = parseInt(document.getElementById('price-' + id).value) || 0;
   const desc = document.getElementById('desc-' + id).value;
+  const name = document.getElementById('name-' + id).value;
   const res = await API('/api/admin/products/' + id + '/update', {
-    method: 'POST', body: JSON.stringify({ price, desc }),
+    method: 'POST', body: JSON.stringify({ price, desc, name }),
   });
   if (res.success) {
     showToast('Đã cập nhật ' + id, 'success');
     loadStats();
   } else {
     showToast(res.error, 'error');
+  }
+}
+
+async function addProduct() {
+  const id = document.getElementById('new-prod-id').value.trim().toUpperCase();
+  const name = document.getElementById('new-prod-name').value.trim();
+  const category = document.getElementById('new-prod-cat').value;
+  const price = parseInt(document.getElementById('new-prod-price').value) || 0;
+  const desc = document.getElementById('new-prod-desc').value.trim();
+
+  if (!id) return showToast('Nhập mã sản phẩm', 'error');
+  if (!name) return showToast('Nhập tên sản phẩm', 'error');
+  if (price <= 0) return showToast('Nhập giá hợp lệ', 'error');
+
+  const res = await API('/api/admin/products/create', {
+    method: 'POST', body: JSON.stringify({ id, name, category, price, desc: desc || name }),
+  });
+  if (res.success) {
+    showToast('Đã thêm sản phẩm ' + name, 'success');
+    document.getElementById('new-prod-id').value = '';
+    document.getElementById('new-prod-name').value = '';
+    document.getElementById('new-prod-price').value = '';
+    document.getElementById('new-prod-desc').value = '';
+    loadProducts();
+    loadStats();
+  } else {
+    showToast(res.error || 'Lỗi thêm sản phẩm', 'error');
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Xoá sản phẩm ' + id + '? Hành động này không thể hoàn tác!')) return;
+  const res = await API('/api/admin/products/' + id + '/delete', { method: 'DELETE' });
+  if (res.success) {
+    showToast('Đã xoá ' + id, 'success');
+    loadProducts();
+    loadStats();
+  } else {
+    showToast(res.error || 'Lỗi xoá', 'error');
   }
 }
 

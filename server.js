@@ -734,6 +734,37 @@ app.get('/api/admin/products', adminAuth, async (req, res) => {
   res.json((products || []).map(p => ({ id: p.id, category: p.category, name: p.name, price: p.price, desc: p.description })));
 });
 
+// Thêm sản phẩm mới
+app.post('/api/admin/products/create', adminAuth, async (req, res) => {
+  const { id, name, category, price, desc } = req.body;
+  if (!id || !name || !category || !price) return res.status(400).json({ error: 'Thiếu thông tin' });
+  if (!/^[A-Z0-9]{1,20}$/.test(id)) return res.status(400).json({ error: 'Mã SP chỉ gồm chữ in hoa và số, tối đa 20 ký tự' });
+  if (!['game', 'cert'].includes(category)) return res.status(400).json({ error: 'Loại phải là game hoặc cert' });
+
+  const existing = await db('SELECT id FROM web_products WHERE id = ?', [id]);
+  if (existing && existing.length > 0) return res.status(400).json({ error: 'Mã SP đã tồn tại' });
+
+  const maxOrder = await db('SELECT MAX(sort_order) as mx FROM web_products');
+  const sortOrder = (maxOrder?.[0]?.mx || 0) + 1;
+
+  const result = await db('INSERT INTO web_products (id, category, name, price, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, category, name, price, desc || name, sortOrder]);
+  if (!result) return res.status(500).json({ error: 'Lỗi tạo sản phẩm' });
+
+  adminLog('create_product', `${id}: ${name} (${category}) - ${price}đ`, req.ip);
+  res.json({ success: true });
+});
+
+// Xoá sản phẩm
+app.delete('/api/admin/products/:id/delete', adminAuth, async (req, res) => {
+  const products = await db('SELECT * FROM web_products WHERE id = ?', [req.params.id]);
+  if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+
+  await db('DELETE FROM web_products WHERE id = ?', [req.params.id]);
+  adminLog('delete_product', `${req.params.id}: ${products[0].name}`, req.ip);
+  res.json({ success: true });
+});
+
 // Sửa sản phẩm (giá, tên, mô tả)
 app.post('/api/admin/products/:id/update', adminAuth, async (req, res) => {
   const { price, desc, name } = req.body;
