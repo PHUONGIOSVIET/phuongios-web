@@ -778,7 +778,13 @@ app.post('/api/admin/products/:id/update', adminAuth, async (req, res) => {
   const changes = [];
   if (price !== undefined) { await db('UPDATE web_products SET price = ? WHERE id = ?', [price, req.params.id]); changes.push(`giá=${price}`); }
   if (desc) { await db('UPDATE web_products SET description = ? WHERE id = ?', [desc, req.params.id]); changes.push('mô tả'); }
-  if (name) { await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]); changes.push(`tên=${name}`); }
+  if (name) {
+    const oldName = products[0].name;
+    await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]);
+    // Đồng bộ key_stock: đổi game_name theo tên mới
+    await db('UPDATE key_stock SET game_name = ? WHERE game_name = ?', [name, oldName]);
+    changes.push(`tên=${name}`);
+  }
 
   adminLog('update_product', `${req.params.id}: ${changes.join(', ')}`, req.ip);
   res.json({ success: true });

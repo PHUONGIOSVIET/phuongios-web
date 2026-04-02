@@ -60,15 +60,11 @@
   <div class="container">
     <a href="index.html" class="logo"><img src="images/logo.png" alt="PHUONGIOS"></a>
     <ul class="nav-links">
-      <li><a href="index.html" data-i18n="home">Trang chủ</a></li>
-      <li><a href="index.html#products" data-i18n="products">Sản phẩm</a></li>
+      <li><a href="index.html">Trang chủ</a></li>
+      <li><a href="index.html#products">Sản phẩm</a></li>
     </ul>
     <div class="header-right">
-      <div class="lang-switch" id="lang-switch">
-        <button type="button" class="lang-btn active" data-lang="vi">VI</button>
-        <button type="button" class="lang-btn" data-lang="en">EN</button>
-      </div>
-      <a href="dangnhap.html" class="btn btn-primary btn-sm"><i class="fas fa-sign-in-alt"></i> <span data-i18n="login">Đăng nhập</span></a>
+      <a href="dangnhap.html" class="btn btn-primary btn-sm"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a>
     </div>
   </div>
 </header>
@@ -80,56 +76,56 @@
       <div style="text-align:center;margin-bottom:16px">
         <i class="fas fa-check-circle" style="font-size:48px;color:var(--green)"></i>
       </div>
-      <h2 data-i18n="yourDeviceInfo">Thông tin thiết bị của bạn</h2>
+      <h2>Thông tin thiết bị của bạn</h2>
 
-      <p style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-align:center" data-i18n="udidClickCopy">UDID (bấm để copy)</p>
+      <p style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-align:center">UDID (bấm để copy)</p>
       <div class="udid-value" id="udid-text" onclick="copyUDID()"></div>
 
       <div class="device-info">
         <div class="device-row">
-          <span class="label"><i class="fas fa-mobile-alt"></i> <span data-i18n="device">Thiết bị</span></span>
+          <span class="label"><i class="fas fa-mobile-alt"></i> Thiết bị</span>
           <span class="value" id="info-product">—</span>
         </div>
         <div class="device-row">
-          <span class="label"><i class="fab fa-apple"></i> <span data-i18n="iosVersion">Phiên bản iOS</span></span>
+          <span class="label"><i class="fab fa-apple"></i> Phiên bản iOS</span>
           <span class="value" id="info-version">—</span>
         </div>
         <div class="device-row">
-          <span class="label"><i class="fas fa-barcode"></i> <span data-i18n="serial">Serial</span></span>
+          <span class="label"><i class="fas fa-barcode"></i> Serial</span>
           <span class="value" id="info-serial">—</span>
         </div>
         <div class="device-row" id="row-imei" style="display:none">
-          <span class="label"><i class="fas fa-sim-card"></i> <span data-i18n="imei">IMEI</span></span>
+          <span class="label"><i class="fas fa-sim-card"></i> IMEI</span>
           <span class="value" id="info-imei">—</span>
         </div>
       </div>
 
       <button class="btn btn-primary btn-block" style="padding:13px;margin-bottom:10px" onclick="copyUDID()">
-        <i class="fas fa-copy"></i> <span data-i18n="copyUdid">Copy UDID</span>
+        <i class="fas fa-copy"></i> Copy UDID
       </button>
 
       <!-- KÍCH HOẠT CHỨNG CHỈ -->
       <div style="margin-top:24px;padding-top:24px;border-top:2px solid #f0f0f0">
         <h3 style="font-size:17px;font-weight:700;margin-bottom:14px;text-align:center">
-          <i class="fab fa-apple" style="color:var(--purple)"></i> <span data-i18n="activateTitle">Kích hoạt chứng chỉ Apple</span>
+          <i class="fab fa-apple" style="color:var(--purple)"></i> Kích hoạt chứng chỉ Apple
         </h3>
         <div class="form-group">
-          <label style="font-size:13px;font-weight:600" data-i18n="activationCode">Mã kích hoạt (Key chứng chỉ)</label>
+          <label style="font-size:13px;font-weight:600">Mã kích hoạt (Key chứng chỉ)</label>
           <div class="input-icon">
             <i class="fas fa-key"></i>
-            <input type="text" class="form-control" id="cert-code" data-i18n-placeholder="loginPlaceholder" placeholder="Nhập mã key chứng chỉ đã mua">
+            <input type="text" class="form-control" id="cert-code" placeholder="Nhập mã key chứng chỉ đã mua">
           </div>
         </div>
         <div class="form-group">
-          <label style="font-size:13px;font-weight:600" data-i18n="signType">Loại ký</label>
+          <label style="font-size:13px;font-weight:600">Loại ký</label>
           <select class="form-control" id="cert-appid" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;width:100%">
-            <option value="2" selected data-i18n="signEsign">Cài Esign (轻松签) — Khuyên dùng</option>
-            <option value="1" data-i18n="signFull">Cài toàn bộ (全能签)</option>
-            <option value="0" data-i18n="signZip">Chỉ tải file chứng chỉ (.zip)</option>
+            <option value="2" selected>Cài Esign (轻松签) — Khuyên dùng</option>
+            <option value="1">Cài toàn bộ (全能签)</option>
+            <option value="0">Chỉ tải file chứng chỉ (.zip)</option>
           </select>
         </div>
         <button class="btn btn-success btn-block" style="padding:13px;font-size:15px" onclick="activateCert()" id="btn-activate">
-          <i class="fas fa-certificate"></i> <span data-i18n="activateBtn">Kích hoạt chứng chỉ</span>
+          <i class="fas fa-certificate"></i> Kích hoạt chứng chỉ
         </button>
         <div id="cert-result" style="display:none;margin-top:14px"></div>
       </div>
@@ -137,18 +133,18 @@
       <!-- KIỂM TRA TRẠNG THÁI -->
       <div style="margin-top:20px;padding-top:20px;border-top:2px solid #f0f0f0">
         <button class="btn btn-outline btn-block" style="padding:11px" onclick="checkStatus()">
-          <i class="fas fa-search"></i> <span data-i18n="checkStatusBtn">Kiểm tra trạng thái chứng chỉ</span>
+          <i class="fas fa-search"></i> Kiểm tra trạng thái chứng chỉ
         </button>
         <div id="status-result" style="display:none;margin-top:14px"></div>
       </div>
 
       <a href="https://t.me/PHUONGIOSVIET" target="_blank" class="btn btn-block" style="padding:13px;text-decoration:none;margin-top:14px;background:#2196f3;color:#fff">
-        <i class="fab fa-telegram"></i> <span data-i18n="telegramSupport">Hỗ trợ qua Telegram</span>
+        <i class="fab fa-telegram"></i> Hỗ trợ qua Telegram
       </a>
 
       <div class="info-box" style="margin-top:16px;margin-bottom:0">
         <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
-        <span data-i18n="removeProfileHint">Bạn có thể xoá profile "PHUONGIOS - Lấy UDID" trong Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị.</span>
+        <span>Bạn có thể xoá profile <strong>"PHUONGIOS - Lấy UDID"</strong> trong Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị.</span>
       </div>
     </div>
   </div>
@@ -157,40 +153,40 @@
   <div id="udid-guide">
     <div class="get-udid-section">
       <div style="font-size:48px;margin-bottom:16px"><i class="fab fa-apple" style="color:#333"></i></div>
-      <h2 data-i18n="guideTitle">Lấy UDID iPhone / iPad</h2>
-      <p data-i18n="guideDesc">UDID là mã định danh duy nhất của thiết bị Apple, cần thiết để đăng ký chứng chỉ Developer Certificate.</p>
+      <h2>Lấy UDID iPhone / iPad</h2>
+      <p>UDID là mã định danh duy nhất của thiết bị Apple, cần thiết để đăng ký chứng chỉ Developer Certificate.</p>
 
       <div class="safari-warning">
         <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px"></i>
-        <span data-i18n="safariNotice"><strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.</span>
+        <span><strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.</span>
       </div>
 
       <a href="/api/udid/profile" class="btn btn-primary btn-block" style="padding:15px;font-size:16px;margin-bottom:20px;text-decoration:none">
-        <i class="fas fa-download"></i> <span data-i18n="getUdidNow">Lấy UDID ngay</span>
+        <i class="fas fa-download"></i> Lấy UDID ngay
       </a>
 
       <div class="step-list">
         <div class="step-item">
           <div class="step-num">1</div>
-          <div class="step-text" data-i18n="step1">Bấm nút <strong style="color:var(--primary)">"Lấy UDID ngay"</strong> ở trên</div>
+          <div class="step-text">Bấm nút <strong style="color:var(--primary)">"Lấy UDID ngay"</strong> ở trên</div>
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
-          <div class="step-text" data-i18n="step2">Bấm <strong>"Cho phép"</strong> khi hiện popup tải Profile</div>
+          <div class="step-text">Bấm <strong>"Cho phép"</strong> khi hiện popup tải Profile</div>
         </div>
         <div class="step-item">
           <div class="step-num">3</div>
-          <div class="step-text" data-i18n="step3">Mở <strong>Cài đặt</strong> → <strong>Đã tải về</strong> (hoặc thông báo trên cùng) → Bấm <strong>Cài đặt</strong> Profile</div>
+          <div class="step-text">Mở <strong>Cài đặt</strong> → <strong>Đã tải về</strong> (hoặc thông báo trên cùng) → Bấm <strong>Cài đặt</strong> Profile</div>
         </div>
         <div class="step-item">
           <div class="step-num">4</div>
-          <div class="step-text" data-i18n="step4">Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn</div>
+          <div class="step-text">Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn</div>
         </div>
       </div>
 
       <div style="margin-top:20px">
         <a href="index.html" class="btn btn-outline btn-sm" style="text-decoration:none">
-          <i class="fas fa-arrow-left"></i> <span data-i18n="backHome">Quay lại trang chủ</span>
+          <i class="fas fa-arrow-left"></i> Quay lại trang chủ
         </a>
       </div>
     </div>
@@ -207,123 +203,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const i18n = {
-  vi: {
-    htmlLang: 'vi',
-    title: 'Lấy UDID — PHUONGIOS',
-    home: 'Trang chủ',
-    products: 'Sản phẩm',
-    login: 'Đăng nhập',
-    copyUdid: 'Copy UDID',
-    loginPlaceholder: 'Nhập mã key chứng chỉ đã mua',
-    activateBtn: 'Kích hoạt chứng chỉ',
-    checkStatusBtn: 'Kiểm tra trạng thái chứng chỉ',
-    telegramSupport: 'Hỗ trợ qua Telegram',
-    backHome: 'Quay lại trang chủ',
-    copySuccess: 'Đã copy UDID!',
-    enterCode: 'Vui lòng nhập mã kích hoạt',
-    noUdid: 'Không tìm thấy UDID',
-    activating: 'Đang kích hoạt...',
-    activateSuccess: 'Kích hoạt thành công!',
-    connectionError: 'Lỗi kết nối, vui lòng thử lại',
-    checkingError: 'Lỗi kiểm tra',
-    guideTitle: 'Lấy UDID iPhone / iPad',
-    guideDesc: 'UDID là mã định danh duy nhất của thiết bị Apple, cần thiết để đăng ký chứng chỉ Developer Certificate.',
-    getUdidNow: 'Lấy UDID ngay',
-    yourDeviceInfo: 'Thông tin thiết bị của bạn',
-    udidClickCopy: 'UDID (bấm để copy)',
-    device: 'Thiết bị',
-    iosVersion: 'Phiên bản iOS',
-    serial: 'Serial',
-    imei: 'IMEI',
-    activateTitle: 'Kích hoạt chứng chỉ Apple',
-    activationCode: 'Mã kích hoạt (Key chứng chỉ)',
-    signType: 'Loại ký',
-    signEsign: 'Cài Esign (轻松签) — Khuyên dùng',
-    signFull: 'Cài toàn bộ (全能签)',
-    signZip: 'Chỉ tải file chứng chỉ (.zip)',
-    removeProfileHint: 'Bạn có thể xoá profile "PHUONGIOS - Lấy UDID" trong Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị.',
-    safariNotice: '<strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.',
-    step1: 'Bấm nút <strong style="color:var(--primary)">"Lấy UDID ngay"</strong> ở trên',
-    step2: 'Bấm <strong>"Cho phép"</strong> khi hiện popup tải Profile',
-    step3: 'Mở <strong>Cài đặt</strong> → <strong>Đã tải về</strong> (hoặc thông báo trên cùng) → Bấm <strong>Cài đặt</strong> Profile',
-    step4: 'Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn'
-  },
-  en: {
-    htmlLang: 'en',
-    title: 'Get UDID — PHUONGIOS',
-    home: 'Home',
-    products: 'Products',
-    login: 'Login',
-    copyUdid: 'Copy UDID',
-    loginPlaceholder: 'Enter your purchased certificate key',
-    activateBtn: 'Activate certificate',
-    checkStatusBtn: 'Check certificate status',
-    telegramSupport: 'Support via Telegram',
-    backHome: 'Back to homepage',
-    copySuccess: 'UDID copied successfully!',
-    enterCode: 'Please enter your activation code',
-    noUdid: 'UDID not found',
-    activating: 'Activating...',
-    activateSuccess: 'Activation successful!',
-    connectionError: 'Connection error, please try again',
-    checkingError: 'Check failed',
-    guideTitle: 'Get iPhone / iPad UDID',
-    guideDesc: 'UDID is the unique identifier of your Apple device, required to register an Apple Developer certificate.',
-    getUdidNow: 'Get UDID now',
-    yourDeviceInfo: 'Your device information',
-    udidClickCopy: 'UDID (tap to copy)',
-    device: 'Device',
-    iosVersion: 'iOS version',
-    serial: 'Serial',
-    imei: 'IMEI',
-    activateTitle: 'Activate Apple certificate',
-    activationCode: 'Activation code (certificate key)',
-    signType: 'Signing option',
-    signEsign: 'Install Esign (recommended)',
-    signFull: 'Install full package',
-    signZip: 'Download certificate files only (.zip)',
-    removeProfileHint: 'You can remove the "PHUONGIOS - Get UDID" profile in Settings → General → VPN & Device Management.',
-    safariNotice: '<strong>Notice:</strong> You must open this page in <strong>Safari</strong> on your iPhone/iPad. Do not use Chrome, Zalo, or other browsers.',
-    step1: 'Tap the <strong style="color:var(--primary)">"Get UDID now"</strong> button above',
-    step2: 'Tap <strong>"Allow"</strong> when the profile download popup appears',
-    step3: 'Open <strong>Settings</strong> → <strong>Profile Downloaded</strong> (or the top notice) → tap <strong>Install</strong> on the profile',
-    step4: 'Safari will reopen automatically and display your <strong>UDID</strong> and device information'
-  }
-};
-
-let currentLang = localStorage.getItem('site_lang') || (navigator.language && navigator.language.toLowerCase().includes('vi') ? 'vi' : 'en');
-function t(key) {
-  return i18n[currentLang][key] ?? i18n.vi[key] ?? key;
-}
-function applyTranslations() {
-  document.documentElement.lang = t('htmlLang');
-  document.title = t('title');
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.dataset.i18n;
-    if (!key) return;
-    const value = t(key);
-    if (typeof value === 'string' && value.includes('<')) el.innerHTML = value;
-    else el.textContent = value;
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.dataset.i18nPlaceholder;
-    if (key) el.placeholder = t(key);
-  });
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === currentLang);
-  });
-}
-function bindLangButtons() {
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.onclick = () => {
-      currentLang = btn.dataset.lang || 'vi';
-      localStorage.setItem('site_lang', currentLang);
-      applyTranslations();
-    };
-  });
-}
-
 const params = new URLSearchParams(window.location.search);
 const udid = params.get('udid');
 // Tự động điền key nếu được chuyển từ trang mua hàng
@@ -382,15 +261,16 @@ if (udid && udid !== '' && udid !== 'unknown') {
 function copyUDID() {
   const udidText = document.getElementById('udid-text').textContent;
   navigator.clipboard.writeText(udidText).then(() => {
-    showToast(t('copySuccess'), 'success');
+    showToast('Đã copy UDID!', 'success');
   }).catch(() => {
+    // Fallback
     const ta = document.createElement('textarea');
     ta.value = udidText;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    showToast(t('copySuccess'), 'success');
+    showToast('Đã copy UDID!', 'success');
   });
 }
 
@@ -407,12 +287,12 @@ async function activateCert() {
   const appid = document.getElementById('cert-appid').value;
   const udidVal = document.getElementById('udid-text').textContent;
 
-  if (!code) return showToast(t('enterCode'), 'error');
-  if (!udidVal) return showToast(t('noUdid'), 'error');
+  if (!code) return showToast('Vui lòng nhập mã kích hoạt', 'error');
+  if (!udidVal) return showToast('Không tìm thấy UDID', 'error');
 
   const btn = document.getElementById('btn-activate');
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;vertical-align:middle"></span> ${t('activating')}`;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;vertical-align:middle"></span> Đang kích hoạt...';
 
   try {
     const res = await fetch('/api/cert/activate', {
@@ -483,7 +363,7 @@ async function activateCert() {
       </div>`;
       html += '</div>';
       box.innerHTML = html;
-      showToast(t('activateSuccess'), 'success');
+      showToast('Kích hoạt thành công!', 'success');
     } else {
       // Lỗi
       const errorMsg = data.msg || data.error || 'Có lỗi xảy ra';
@@ -493,17 +373,17 @@ async function activateCert() {
       showToast(errorMsg, 'error');
     }
   } catch (e) {
-    showToast(t('connectionError'), 'error');
+    showToast('Lỗi kết nối, vui lòng thử lại', 'error');
   }
 
   btn.disabled = false;
-  btn.innerHTML = `<i class="fas fa-certificate"></i> ${t('activateBtn')}`;
+  btn.innerHTML = '<i class="fas fa-certificate"></i> Kích hoạt chứng chỉ';
 }
 
 // ====== KIỂM TRA TRẠNG THÁI ======
 async function checkStatus() {
   const udidVal = document.getElementById('udid-text').textContent;
-  if (!udidVal) return showToast(t('noUdid'), 'error');
+  if (!udidVal) return showToast('Không tìm thấy UDID', 'error');
 
   const box = document.getElementById('status-result');
   box.style.display = 'block';
@@ -577,16 +457,13 @@ async function checkStatus() {
       </div>`;
     } else {
       box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:14px">
-        <div style="font-weight:600;color:#dc2626"><i class="fas fa-times-circle"></i> ${data.msg || t('checkingError')}</div>
+        <div style="font-weight:600;color:#dc2626"><i class="fas fa-times-circle"></i> ${data.msg || 'Lỗi kiểm tra'}</div>
       </div>`;
     }
   } catch {
-    box.innerHTML = `<div style="color:var(--red)">${t('connectionError')}</div>`;
+    box.innerHTML = '<div style="color:var(--red)">Lỗi kết nối</div>';
   }
 }
-
-bindLangButtons();
-applyTranslations();
 </script>
 </body>
 </html>
