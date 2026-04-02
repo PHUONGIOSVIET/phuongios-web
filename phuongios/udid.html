@@ -247,7 +247,28 @@ const i18n = {
     step1: 'Bấm nút <strong style="color:var(--primary)">"Lấy UDID ngay"</strong> ở trên',
     step2: 'Bấm <strong>"Cho phép"</strong> khi hiện popup tải Profile',
     step3: 'Mở <strong>Cài đặt</strong> → <strong>Đã tải về</strong> (hoặc thông báo trên cùng) → Bấm <strong>Cài đặt</strong> Profile',
-    step4: 'Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn'
+    step4: 'Safari sẽ tự mở lại và hiển thị <strong>UDID</strong> cùng thông tin thiết bị của bạn',
+    installEsignNow: 'Cài đặt Esign ngay',
+    downloadCertZip: 'Tải file chứng chỉ (.zip)',
+    installViaDirectLink: 'Cài qua link trực tiếp',
+    downloadP12: 'Tải file .p12',
+    downloadMobileprovision: 'Tải Mobileprovision',
+    esignGuideTitle: 'Hướng dẫn cài đặt Esign',
+    esignStep1: '<strong>Bước 1:</strong> Bấm nút <strong style="color:#16a34a">"Cài đặt Esign ngay"</strong> ở trên',
+    esignStep2: '<strong>Bước 2:</strong> Bấm nút <strong style="color:#22c55e">点击安装</strong> (nút xanh có logo Apple) để cài đặt',
+    esignStep3: '<strong>Bước 3:</strong> Máy iOS 16 trở lên vui lòng kích hoạt Chế độ phát triển trong Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Chế độ phát triển → Bật → Khởi động lại → Chọn BẬT, sau đó mở Esign để sử dụng.',
+    certFound: 'Đã tìm thấy chứng chỉ',
+    activeState: '✅ Hoạt động',
+    revokedState: '❌ Đã bị thu hồi',
+    warrantyExpired: '⏰ Hết bảo hành',
+    deviceLabel: 'Thiết bị',
+    typeLabel: 'Loại',
+    statusLabel: 'Trạng thái',
+    addedDateLabel: 'Ngày thêm',
+    warrantyRequestBtn: 'Yêu cầu bảo hành',
+    warrantyRequestHint: 'Gửi yêu cầu qua Telegram để được cấp chứng chỉ mới',
+    noCertForUdid: 'Chưa có chứng chỉ nào cho UDID này',
+    unknownError: 'Có lỗi xảy ra'
   },
   en: {
     htmlLang: 'en',
@@ -288,7 +309,28 @@ const i18n = {
     step1: 'Tap the <strong style="color:var(--primary)">"Get UDID now"</strong> button above',
     step2: 'Tap <strong>"Allow"</strong> when the profile download popup appears',
     step3: 'Open <strong>Settings</strong> → <strong>Profile Downloaded</strong> (or the top notice) → tap <strong>Install</strong> on the profile',
-    step4: 'Safari will reopen automatically and display your <strong>UDID</strong> and device information'
+    step4: 'Safari will reopen automatically and display your <strong>UDID</strong> and device information',
+    installEsignNow: 'Install Esign now',
+    downloadCertZip: 'Download certificate files (.zip)',
+    installViaDirectLink: 'Install via direct link',
+    downloadP12: 'Download .p12 file',
+    downloadMobileprovision: 'Download mobileprovision',
+    esignGuideTitle: 'Esign installation guide',
+    esignStep1: '<strong>Step 1:</strong> Tap the <strong style="color:#16a34a">"Install Esign now"</strong> button above',
+    esignStep2: '<strong>Step 2:</strong> Tap the <strong style="color:#22c55e">点击安装</strong> button (green button with Apple logo) to install',
+    esignStep3: '<strong>Step 3:</strong> On iOS 16 and above, enable Developer Mode in Settings → Privacy & Security → Developer Mode → Turn On → Restart → Confirm Enable, then open Esign to use it.',
+    certFound: 'Certificate found',
+    activeState: '✅ Active',
+    revokedState: '❌ Revoked',
+    warrantyExpired: '⏰ Warranty expired',
+    deviceLabel: 'Device',
+    typeLabel: 'Type',
+    statusLabel: 'Status',
+    addedDateLabel: 'Added date',
+    warrantyRequestBtn: 'Request warranty',
+    warrantyRequestHint: 'Send a request via Telegram to receive a replacement certificate',
+    noCertForUdid: 'No certificate found for this UDID',
+    unknownError: 'Something went wrong'
   }
 };
 
@@ -427,58 +469,52 @@ async function activateCert() {
     if (data.code === 1 || data.code === 0) {
       // Thành công
       let html = `<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:16px">
-        <div style="font-weight:700;color:#16a34a;margin-bottom:12px;font-size:16px"><i class="fas fa-check-circle"></i> Kích hoạt thành công!</div>`;
+        <div style="font-weight:700;color:#16a34a;margin-bottom:12px;font-size:16px"><i class="fas fa-check-circle"></i> ${t('activateSuccess')}</div>`;
 
       if (data.data && data.data.url) {
         html += `<a href="${data.data.url}" class="btn btn-success btn-block" style="padding:14px;text-decoration:none;margin-bottom:8px;font-size:15px">
-          <i class="fas fa-arrow-down"></i> Cài đặt Esign ngay
+          <i class="fas fa-arrow-down"></i> ${t('installEsignNow')}
         </a>`;
       }
       if (data.data && data.data.zip) {
         html += `<a href="${data.data.zip}" class="btn btn-primary btn-block" style="padding:14px;text-decoration:none;margin-bottom:8px;font-size:15px">
-          <i class="fas fa-file-archive"></i> Tải file chứng chỉ (.zip)
+          <i class="fas fa-file-archive"></i> ${t('downloadCertZip')}
         </a>`;
       }
       if (data.data && data.data.plist) {
         html += `<a href="${data.data.plist}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
-          <i class="fas fa-download"></i> Cài qua link trực tiếp
+          <i class="fas fa-download"></i> ${t('installViaDirectLink')}
         </a>`;
       }
       if (data.data && data.data.sign) {
         html += `<a href="${data.data.sign}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none;margin-bottom:8px">
-          <i class="fas fa-file-alt"></i> Tải file .p12
+          <i class="fas fa-file-alt"></i> ${t('downloadP12')}
         </a>`;
       }
       if (data.data && data.data.mobileprovision) {
         html += `<a href="${data.data.mobileprovision}" class="btn btn-outline btn-block" style="padding:12px;text-decoration:none">
-          <i class="fas fa-file-alt"></i> Tải Mobileprovision
+          <i class="fas fa-file-alt"></i> ${t('downloadMobileprovision')}
         </a>`;
       }
       html += `<div style="margin-top:14px;background:#f0f9ff;border:1.5px solid #93c5fd;border-radius:12px;padding:14px">
-        <p style="font-weight:700;font-size:14px;color:#1d4ed8;margin-bottom:10px;text-align:center"><i class="fas fa-info-circle"></i> Hướng dẫn cài đặt Esign</p>
+        <p style="font-weight:700;font-size:14px;color:#1d4ed8;margin-bottom:10px;text-align:center"><i class="fas fa-info-circle"></i> ${t('esignGuideTitle')}</p>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
           <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#4facfe,#00f2fe);display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <span style="color:#fff;font-size:18px;font-style:italic;font-weight:700">E</span>
           </div>
-          <div style="font-size:13px;line-height:1.5">
-            <strong>Bước 1:</strong> Bấm nút <strong style="color:#16a34a">"Cài đặt Esign ngay"</strong> ở trên
-          </div>
+          <div style="font-size:13px;line-height:1.5">${t('esignStep1')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
           <div style="width:44px;height:44px;border-radius:12px;background:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <i class="fab fa-apple" style="color:#fff;font-size:22px"></i>
           </div>
-          <div style="font-size:13px;line-height:1.5">
-            <strong>Bước 2:</strong> Bấm nút <strong style="color:#22c55e"> 点击安装</strong> (nút xanh có logo Apple) để cài đặt
-          </div>
+          <div style="font-size:13px;line-height:1.5">${t('esignStep2')}</div>
         </div>
         <div style="font-size:13px;display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;border-radius:12px;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <i class="fas fa-cog" style="color:#fff;font-size:20px"></i>
           </div>
-          <div style="line-height:1.5">
-            <strong>Bước 3:</strong> Máy iOS 16 trở lên <strong>Vui lòng kích hoạt chế độ phát triển trong:Cài đặt hệ thống -> Quyền riêng tư và Bảo mật -> Chế độ phát triển -> Bật -> Chọn Khởi Động Lại -> Máy Lên Chọn BẬT </strong> → Mở App Esign Và Sử Dụng
-          </div>
+          <div style="line-height:1.5">${t('esignStep3')}</div>
         </div>
       </div>`;
       html += '</div>';
@@ -519,12 +555,12 @@ async function checkStatus() {
 
     if (data.code === 1 && data.data && data.data.length > 0) {
       let html = '<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:14px">';
-      html += '<div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> Đã tìm thấy chứng chỉ</div>';
+      html += `<div style="font-weight:700;color:#16a34a;margin-bottom:10px"><i class="fas fa-check-circle"></i> ${t('certFound')}</div>`;
       data.data.forEach(d => {
         const isOk = d.state === '正常';
         const isDown = d.state === '已掉' || d.state === '已撤销';
         const stateColor = isOk ? '#16a34a' : '#dc2626';
-        const stateText = isOk ? '✅ Hoạt động' : isDown ? '❌ Đã bị thu hồi' : d.state;
+        const stateText = isOk ? t('activeState') : isDown ? t('revokedState') : d.state;
 
         // Tính số ngày bảo hành còn lại
         let warrantyHtml = '';
@@ -535,9 +571,9 @@ async function checkStatus() {
             const expireDate = new Date(addDate.getTime() + warrantyDays * 86400000);
             const remainDays = Math.ceil((expireDate - Date.now()) / 86400000);
             if (remainDays > 0) {
-              warrantyHtml = `<div style="margin-top:6px;color:#2563eb;font-weight:600">🛡️ Bảo hành: còn ${remainDays} ngày (gói ${warrantyDays} ngày)</div>`;
+              warrantyHtml = `<div style="margin-top:6px;color:#2563eb;font-weight:600">${currentLang === 'en' ? `🛡️ Warranty left: ${remainDays} days (${warrantyDays}-day plan)` : `🛡️ Bảo hành: còn ${remainDays} ngày (gói ${warrantyDays} ngày)`}</div>`;
             } else {
-              warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">⏰ Hết bảo hành</div>`;
+              warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">${t('warrantyExpired')}</div>`;
             }
           }
         }
@@ -545,14 +581,14 @@ async function checkStatus() {
         if (!warrantyHtml && d.addtime) {
           const addDate = new Date(d.addtime);
           const daysSince = Math.floor((Date.now() - addDate) / 86400000);
-          warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">📅 Đã sử dụng ${daysSince} ngày</div>`;
+          warrantyHtml = `<div style="margin-top:6px;color:var(--muted)">${currentLang === 'en' ? `📅 Used for ${daysSince} days` : `📅 Đã sử dụng ${daysSince} ngày`}</div>`;
         }
 
         html += `<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;font-size:13px;border:1px solid #e5e7eb">
-          <div style="font-weight:700;font-size:14px">${d.pname || 'Thiết bị'}</div>
-          <div style="color:var(--muted);margin-top:6px">Loại: <strong>${d.type || '—'}</strong></div>
-          <div style="margin-top:4px">Trạng thái: <span style="color:${stateColor};font-weight:700">${stateText}</span></div>
-          <div style="color:var(--muted);margin-top:4px">Ngày thêm: ${d.addtime || '—'}</div>
+          <div style="font-weight:700;font-size:14px">${d.pname || t('deviceLabel')}</div>
+          <div style="color:var(--muted);margin-top:6px">${t('typeLabel')}: <strong>${d.type || '—'}</strong></div>
+          <div style="margin-top:4px">${t('statusLabel')}: <span style="color:${stateColor};font-weight:700">${stateText}</span></div>
+          <div style="color:var(--muted);margin-top:4px">${t('addedDateLabel')}: ${d.addtime || '—'}</div>
           ${warrantyHtml}`;
 
         // Nút yêu cầu bảo hành nếu bị thu hồi
@@ -561,9 +597,9 @@ async function checkStatus() {
           const warrantyMsg = encodeURIComponent(`🛡️ YÊU CẦU BẢO HÀNH\n\nUDID: ${d.udid}\nTên: ${d.pname}\nNgày thêm: ${d.addtime}\nTrạng thái: Đã bị thu hồi\n\nVui lòng cấp lại chứng chỉ.`);
           html += `<div style="margin-top:10px">
             <a href="https://t.me/PHUONGIOSVIET?text=${warrantyMsg}" target="_blank" class="btn btn-danger btn-block" style="padding:11px;text-decoration:none;font-size:13px">
-              <i class="fas fa-shield-alt"></i> Yêu cầu bảo hành
+              <i class="fas fa-shield-alt"></i> ${t('warrantyRequestBtn')}
             </a>
-            <p style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Gửi yêu cầu qua Telegram để được cấp chứng chỉ mới</p>
+            <p style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">${t('warrantyRequestHint')}</p>
           </div>`;
         }
 
@@ -573,7 +609,7 @@ async function checkStatus() {
       box.innerHTML = html;
     } else if (data.code === 2) {
       box.innerHTML = `<div style="background:#fff7ed;border:1.5px solid #f59e0b;border-radius:12px;padding:14px">
-        <div style="font-weight:600;color:#d97706"><i class="fas fa-info-circle"></i> Chưa có chứng chỉ nào cho UDID này</div>
+        <div style="font-weight:600;color:#d97706"><i class="fas fa-info-circle"></i> ${t('noCertForUdid')}</div>
       </div>`;
     } else {
       box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:14px">

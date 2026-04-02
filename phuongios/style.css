@@ -46,30 +46,32 @@ ul { list-style:none; }
 .lang-switch {
   display:inline-flex;
   align-items:center;
-  gap:4px;
-  padding:4px;
-  background:#f1f5f9;
-  border:1px solid var(--border);
-  border-radius:999px;
+  gap:8px;
 }
 .lang-btn {
-  border:none;
-  background:transparent;
+  min-width:44px;
+  height:34px;
+  padding:0 14px;
+  border-radius:10px;
+  border:1.5px solid var(--border);
+  background:#fff;
   color:var(--muted);
   font-size:12px;
-  font-weight:700;
-  padding:6px 12px;
-  border-radius:999px;
+  font-weight:800;
   cursor:pointer;
   font-family:'Be Vietnam Pro',sans-serif;
-}
-.lang-btn.active {
-  background:var(--primary);
-  color:#fff;
-  box-shadow:0 2px 8px rgba(37,99,235,0.2);
+  transition:all .2s ease;
 }
 .lang-btn:hover {
+  border-color:var(--primary);
   color:var(--primary);
+  transform:translateY(-1px);
+}
+.lang-btn.active {
+  background:linear-gradient(135deg,var(--primary),#1d4ed8);
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 8px 20px rgba(37,99,235,0.22);
 }
 .balance-badge {
   background:var(--green-bg); color:var(--green);
