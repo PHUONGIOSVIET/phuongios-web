@@ -13,10 +13,10 @@ const FIXED_USD_PRICES = {
     // Game
     FF: 12, LQ: 12, BBP: 12, BBPI: 15, PTIPA: 15, PTAND: 18, CF: 18,
     // Cert — tính theo tỷ giá 24,000đ
-    CERT7:   2,   // 50,000đ  ≈ $2
-    CERT30:  7,   // 150,000đ ≈ $6.25 → làm tròn $7
-    CERT60:  12,  // ~280,000đ
-    CERT90:  15,  // 350,000đ ≈ $14.6 → $15
+    CERT7:   8,   // 50,000đ  ≈ $2
+    CERT30:  12,   // 150,000đ ≈ $6.25 → làm tròn $7
+    CERT60:  14,  // ~280,000đ
+    CERT90:  18,  // 350,000đ ≈ $14.6 → $15
     CERT170: 25,
     CERT330: 45,
   },
@@ -66,9 +66,9 @@ const CONFIG = {
   STK: '0000154878888',
   NGAN_HANG: 'MBBANK',
   PRODUCTS: [
-    { id: 'FF',    category: 'game', name: 'Free Fire',              price: 150000, desc: 'Key hack Free Fire, auto update, an toàn.' },
-    { id: 'LQ',    category: 'game', name: 'Liên Quân Mobile',       price: 150000, desc: 'Key hack Liên Quân, chống ban, bypass mới nhất.' },
-    { id: 'BBP',   category: 'game', name: '8 Ball Pool Trollstore', price: 150000, desc: 'Key 8 Ball Pool cài qua Trollstore.' },
+    { id: 'FF',    category: 'game', name: 'Free Fire',              price: 145000, desc: 'Key hack Free Fire, auto update, an toàn.' },
+    { id: 'LQ',    category: 'game', name: 'Liên Quân Mobile',       price: 145000, desc: 'Key hack Liên Quân, chống ban, bypass mới nhất.' },
+    { id: 'BBP',   category: 'game', name: '8 Ball Pool Trollstore', price: 145000, desc: 'Key 8 Ball Pool cài qua Trollstore.' },
     { id: 'BBPI',  category: 'game', name: '8 Ball Pool IPA',        price: 220000, desc: 'Key 8 Ball Pool bản IPA, hỗ trợ mọi iOS.' },
     { id: 'CF',    category: 'game', name: 'Crossfire Legends VNG',  price: 350000, desc: 'Key hack Crossfire Legends, full tính năng.' },
     { id: 'CERT7', category: 'cert', name: 'Chứng chỉ Apple 7 ngày',  price: 50000,  desc: 'Apple Developer Certificate 7 ngày, ký IPA thoải mái.' },
