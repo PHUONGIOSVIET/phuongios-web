@@ -2,9 +2,4 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/jsphuon/public_html
-    - /bin/cp -f index.html $DEPLOYPATH/
-    - /bin/cp -f dashboard.html $DEPLOYPATH/
-    - /bin/cp -f dangnhap.html $DEPLOYPATH/
-    - /bin/cp -f udid.html $DEPLOYPATH/
-    - /bin/cp -f style.css $DEPLOYPATH/
-    - /bin/cp -R images $DEPLOYPATH/
+    - /bin/cp -R phuongios/. $DEPLOYPATH/
