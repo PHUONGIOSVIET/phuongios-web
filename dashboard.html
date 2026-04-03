@@ -417,7 +417,7 @@ const paymentInfo = {
     account: '0000154878888'
   },
   binance_manual: {
-    binanceId: 'PHUONGIOSVIET',
+    binanceId: '507075201',
     qrImage: 'images/binance-qr.png'
   },
   usdt_trc20: {
@@ -508,6 +508,16 @@ function updateUI() {
 
 function fmt(n) {
   return (n || 0).toLocaleString('vi-VN') + 'đ';
+}
+
+function fmtUsd(n) {
+  const usd = (n || 0) / 24000;
+  return `$${usd.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')}`;
+}
+
+function fmtDepositByMethod(n, method = currentDepositMethod) {
+  if (method === 'binance_manual' || method === 'usdt_trc20') return fmtUsd(n);
+  return fmt(n);
 }
 
 function fmtDate(dateStr) {
@@ -705,7 +715,7 @@ function refreshAmountButtonLabels() {
     const onclick = btn.getAttribute('onclick') || '';
     const match = onclick.match(/selectAmt\(this,(\d+)\)/);
     if (!match) return;
-    btn.textContent = fmt(parseInt(match[1], 10));
+    btn.textContent = fmtDepositByMethod(parseInt(match[1], 10));
   });
 }
 
@@ -740,8 +750,9 @@ function selectAmt(btn, amt) {
 function updateDepositAmt() {
   const custom = parseInt(document.getElementById('custom-amt').value) || 0;
   const amt = custom || selectedAmt;
-  document.getElementById('dep-amt').textContent = fmt(amt);
-  document.getElementById('dep-total').textContent = fmt(amt);
+  const displayAmount = fmtDepositByMethod(amt);
+  document.getElementById('dep-amt').textContent = displayAmount;
+  document.getElementById('dep-total').textContent = displayAmount;
 }
 
 function renderManualPayment(info) {
@@ -749,7 +760,7 @@ function renderManualPayment(info) {
   document.getElementById('qr-bank').textContent = info.line1Value;
   document.getElementById('qr-stk').textContent = info.line2Value;
   document.getElementById('qr-code').textContent = info.line3Value;
-  document.getElementById('qr-amount').textContent = fmt(info.amount);
+  document.getElementById('qr-amount').textContent = fmtDepositByMethod(info.amount, info.method);
 
   document.getElementById('payment-line-1-label').textContent = info.line1Label;
   document.getElementById('payment-line-2-label').textContent = info.line2Label;
@@ -805,13 +816,14 @@ async function createDeposit() {
 
     if (currentDepositMethod === 'binance_manual') {
       renderManualPayment({
+        method: 'binance_manual',
         qrImage: paymentInfo.binance_manual.qrImage,
         line1Label: t('binanceIdLabel'),
         line1Value: paymentInfo.binance_manual.binanceId,
         line2Label: t('paymentMethod'),
         line2Value: t('manualConfirmation'),
         line3Label: t('amountLabel'),
-        line3Value: fmt(amount),
+        line3Value: fmtDepositByMethod(amount, 'binance_manual'),
         amount,
         hint: t('binanceQrHint'),
         notice: t('manualReviewNotice')
@@ -822,13 +834,14 @@ async function createDeposit() {
 
     if (currentDepositMethod === 'usdt_trc20') {
       renderManualPayment({
+        method: 'usdt_trc20',
         qrImage: paymentInfo.usdt_trc20.qrImage,
         line1Label: t('walletAddressLabel'),
         line1Value: paymentInfo.usdt_trc20.wallet,
         line2Label: t('networkLabel'),
         line2Value: paymentInfo.usdt_trc20.network,
-        line3Label: t('paymentMethod'),
-        line3Value: t('manualConfirmation'),
+        line3Label: t('amountLabel'),
+        line3Value: fmtDepositByMethod(amount, 'usdt_trc20'),
         amount,
         hint: t('usdtQrHint'),
         notice: t('usdtNotice')
