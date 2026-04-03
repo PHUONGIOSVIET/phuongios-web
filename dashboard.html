@@ -89,19 +89,36 @@
       <div>
         <div class="card" style="margin-bottom:20px">
           <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px">
-            <i class="fas fa-coins" style="color:var(--orange)"></i> <span data-i18n="chooseDepositAmount">Chọn số tiền nạp</span>
+            <i class="fas fa-credit-card" style="color:var(--orange)"></i> <span data-i18n="chooseDepositMethod">Chọn phương thức nạp</span>
           </h3>
-          <div class="amount-grid">
-            <button class="amount-btn" onclick="selectAmt(this,50000)">50.000đ</button>
-            <button class="amount-btn" onclick="selectAmt(this,100000)">100.000đ</button>
-            <button class="amount-btn selected" onclick="selectAmt(this,200000)">200.000đ</button>
-            <button class="amount-btn" onclick="selectAmt(this,500000)">500.000đ</button>
-            <button class="amount-btn" onclick="selectAmt(this,1000000)">1.000.000đ</button>
-            <button class="amount-btn" onclick="selectAmt(this,2000000)">2.000.000đ</button>
+
+          <div class="amount-grid" style="margin-bottom:18px">
+            <button class="amount-btn selected deposit-method-btn" data-method="bank_qr" onclick="selectDepositMethod(this, 'bank_qr')"><span data-i18n="bankQr">QR Ngân hàng</span></button>
+            <button class="amount-btn deposit-method-btn" data-method="binance_manual" onclick="selectDepositMethod(this, 'binance_manual')"><span data-i18n="binanceMethod">Binance</span></button>
+            <button class="amount-btn deposit-method-btn" data-method="usdt_trc20" onclick="selectDepositMethod(this, 'usdt_trc20')"><span data-i18n="usdtMethod">USDT TRC20</span></button>
           </div>
-          <div class="form-group">
-            <label data-i18n="orEnterAmount">Hoặc nhập số tiền khác</label>
-            <input type="number" class="form-control" id="custom-amt" data-i18n-placeholder="customAmountPlaceholder" placeholder="Nhập số tiền (VD: 150000)" oninput="updateDepositAmt()">
+
+          <div id="deposit-method-note" class="info-box" style="margin-bottom:18px">
+            <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
+            <span data-i18n="bankMethodNote">QR Banking hỗ trợ nạp tự động bằng VND. Số dư thường cập nhật trong 1-2 phút sau khi chuyển khoản đúng nội dung.</span>
+          </div>
+
+          <div id="amount-selector-block">
+            <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px">
+              <i class="fas fa-coins" style="color:var(--orange)"></i> <span data-i18n="chooseDepositAmount">Chọn số tiền nạp</span>
+            </h3>
+            <div class="amount-grid" id="deposit-amount-grid">
+              <button class="amount-btn" onclick="selectAmt(this,50000)">50.000đ</button>
+              <button class="amount-btn" onclick="selectAmt(this,100000)">100.000đ</button>
+              <button class="amount-btn selected" onclick="selectAmt(this,200000)">200.000đ</button>
+              <button class="amount-btn" onclick="selectAmt(this,500000)">500.000đ</button>
+              <button class="amount-btn" onclick="selectAmt(this,1000000)">1.000.000đ</button>
+              <button class="amount-btn" onclick="selectAmt(this,2000000)">2.000.000đ</button>
+            </div>
+            <div class="form-group">
+              <label data-i18n="orEnterAmount">Hoặc nhập số tiền khác</label>
+              <input type="number" class="form-control" id="custom-amt" data-i18n-placeholder="customAmountPlaceholder" placeholder="Nhập số tiền (VD: 150000)" oninput="updateDepositAmt()">
+            </div>
           </div>
         </div>
 
@@ -122,28 +139,28 @@
 
           <div class="summary-box">
             <div class="sum-row"><span data-i18n="depositAmount">Số tiền nạp</span><span id="dep-amt">200.000đ</span></div>
-            <div class="sum-row"><span data-i18n="paymentMethod">Phương thức</span><span data-i18n="bankQr">QR Ngân hàng</span></div>
+            <div class="sum-row"><span data-i18n="paymentMethod">Phương thức</span><span id="dep-method-label" data-i18n="bankQr">QR Ngân hàng</span></div>
             <div class="sum-row"><span data-i18n="paymentTotal">Tổng thanh toán</span><span id="dep-total" style="color:var(--primary)">200.000đ</span></div>
           </div>
 
           <button class="btn btn-primary btn-block" style="padding:13px;margin-bottom:16px" onclick="createDeposit()" id="btn-deposit">
-            <i class="fas fa-qrcode"></i> <span data-i18n="createDepositQr">Tạo mã QR nạp tiền</span>
+            <i class="fas fa-qrcode"></i> <span id="btn-deposit-text" data-i18n="createDepositQr">Tạo mã QR nạp tiền</span>
           </button>
 
           <div id="qr-result" style="display:none">
             <div class="qr-box">
               <img id="qr-img" alt="QR Code">
-              <p style="margin-top:10px;font-size:13px;color:var(--muted)" data-i18n="scanQrHint">Quét QR bằng app ngân hàng để thanh toán</p>
+              <p style="margin-top:10px;font-size:13px;color:var(--muted)" id="qr-hint" data-i18n="scanQrHint">Quét QR bằng app ngân hàng để thanh toán</p>
             </div>
             <div class="summary-box">
-              <div class="sum-row"><span data-i18n="bankName">Ngân hàng</span><span id="qr-bank">MBBANK</span></div>
-              <div class="sum-row"><span data-i18n="accountNumber">Số tài khoản</span><span id="qr-stk" style="font-weight:800">0000154878888</span></div>
-              <div class="sum-row"><span data-i18n="transferContent">Nội dung CK</span><span id="qr-code" style="color:var(--primary);font-weight:800">NAP...</span></div>
+              <div class="sum-row"><span id="payment-line-1-label" data-i18n="bankName">Ngân hàng</span><span id="qr-bank">MBBANK</span></div>
+              <div class="sum-row"><span id="payment-line-2-label" data-i18n="accountNumber">Số tài khoản</span><span id="qr-stk" style="font-weight:800">0000154878888</span></div>
+              <div class="sum-row"><span id="payment-line-3-label" data-i18n="transferContent">Nội dung CK</span><span id="qr-code" style="color:var(--primary);font-weight:800">NAP...</span></div>
               <div class="sum-row"><span data-i18n="amountLabel">Số tiền</span><span id="qr-amount" style="color:var(--green);font-weight:800">0đ</span></div>
             </div>
             <div class="info-box">
               <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
-              <span data-i18n="depositNotice">Chuyển <strong>đúng số tiền</strong> và <strong>đúng nội dung</strong> để nạp tự động. Số dư cập nhật trong 1-2 phút.</span>
+              <span id="deposit-result-note" data-i18n="depositNotice">Chuyển đúng số tiền và đúng nội dung để nạp tự động. Số dư cập nhật trong 1-2 phút.</span>
             </div>
           </div>
         </div>
@@ -209,6 +226,7 @@ const i18n = {
     depositHistoryEmpty: 'Chưa có lịch sử nạp',
     successCompleted: 'Hoàn thành',
     processing: 'Đang xử lý...',
+    chooseDepositMethod: 'Chọn phương thức nạp',
     chooseDepositAmount: 'Chọn số tiền nạp',
     orEnterAmount: 'Hoặc nhập số tiền khác',
     customAmountPlaceholder: 'Nhập số tiền (VD: 150000)',
@@ -217,14 +235,38 @@ const i18n = {
     depositAmount: 'Số tiền nạp',
     paymentMethod: 'Phương thức',
     bankQr: 'QR Ngân hàng',
+    binanceMethod: 'Binance',
+    usdtMethod: 'USDT TRC20',
     paymentTotal: 'Tổng thanh toán',
     createDepositQr: 'Tạo mã QR nạp tiền',
+    createBinanceRequest: 'Hiển thị thông tin nạp Binance',
+    createUsdtRequest: 'Hiển thị thông tin nạp USDT',
     scanQrHint: 'Quét QR bằng app ngân hàng để thanh toán',
     bankName: 'Ngân hàng',
     accountNumber: 'Số tài khoản',
     transferContent: 'Nội dung CK',
     amountLabel: 'Số tiền',
     depositNotice: 'Chuyển đúng số tiền và đúng nội dung để nạp tự động. Số dư cập nhật trong 1-2 phút.',
+    bankMethodNote: 'QR Banking hỗ trợ nạp tự động bằng VND. Số dư thường cập nhật trong 1-2 phút sau khi chuyển khoản đúng nội dung.',
+    binanceMethodNote: 'Binance là phương thức xác nhận thủ công. Người dùng có thể chuyển qua Binance ID hoặc QR Binance của shop.',
+    usdtMethodNote: 'USDT TRC20 dùng mạng TRON. Hãy chuyển đúng mạng TRC20 để tránh mất tiền.',
+    binanceManualTitle: 'Thông tin nạp Binance',
+    usdtManualTitle: 'Thông tin nạp USDT TRC20',
+    binanceIdLabel: 'Binance ID',
+    walletAddressLabel: 'Địa chỉ ví',
+    networkLabel: 'Mạng',
+    manualConfirmation: 'Xác nhận thủ công',
+    autoConfirmation: 'Tự động',
+    iHavePaid: 'Tôi đã chuyển tiền',
+    contactSupport: 'Liên hệ hỗ trợ',
+    manualReviewNotice: 'Sau khi chuyển tiền, vui lòng gửi ảnh giao dịch qua Telegram để shop xác nhận thủ công nhanh hơn.',
+    usdtNotice: 'Chỉ chuyển USDT mạng TRC20. Sau khi chuyển xong, hãy gửi TXID hoặc ảnh giao dịch cho shop nếu cần đối soát.',
+    binanceQrHint: 'Quét mã QR Binance hoặc chuyển tới Binance ID bên dưới.',
+    usdtQrHint: 'Quét mã QR ví hoặc copy địa chỉ USDT TRC20 để chuyển tiền.',
+    pendingManual: 'Chờ xác nhận tay',
+    historyMethodLabel: 'Phương thức',
+    statusPendingManual: 'Chờ xác nhận thủ công',
+    statusWaitingPayment: 'Chờ thanh toán',
     confirmBuyTitle: 'Xác nhận mua hàng',
     productLabel: 'Sản phẩm',
     priceLabel: 'Giá',
@@ -240,7 +282,12 @@ const i18n = {
     creatingQr: 'Đang tạo...',
     qrCreated: 'Đã tạo mã QR! Chuyển khoản để nạp tiền.',
     depositSuccess: 'Nạp tiền thành công! Số dư:',
-    pending: 'Chờ xử lý'
+    pending: 'Chờ xử lý',
+    copiedSuccess: 'Đã copy!',
+    amountRequired: 'Vui lòng nhập số tiền hợp lệ',
+    manualRequestCreated: 'Đã hiển thị thông tin thanh toán. Vui lòng chuyển tiền và gửi xác nhận cho shop.',
+    bankTransfer: 'Chuyển khoản ngân hàng',
+    viewPaymentInfo: 'Xem thông tin thanh toán'
   },
   en: {
     htmlLang: 'en',
@@ -272,22 +319,47 @@ const i18n = {
     depositHistoryEmpty: 'No deposit history yet',
     successCompleted: 'Completed',
     processing: 'Processing...',
+    chooseDepositMethod: 'Choose a deposit method',
     chooseDepositAmount: 'Choose deposit amount',
     orEnterAmount: 'Or enter a custom amount',
-    customAmountPlaceholder: 'Enter amount (e.g. 150000)',
+    customAmountPlaceholder: 'Enter amount in VND (e.g. 150000)',
     depositHistory: 'Deposit history',
     paymentTitle: 'Payment',
     depositAmount: 'Deposit amount',
     paymentMethod: 'Method',
     bankQr: 'Bank QR',
+    binanceMethod: 'Binance',
+    usdtMethod: 'USDT TRC20',
     paymentTotal: 'Total payment',
     createDepositQr: 'Create deposit QR',
+    createBinanceRequest: 'Show Binance payment details',
+    createUsdtRequest: 'Show USDT payment details',
     scanQrHint: 'Scan this QR with your banking app to pay',
     bankName: 'Bank',
     accountNumber: 'Account number',
     transferContent: 'Transfer note',
     amountLabel: 'Amount',
     depositNotice: 'Transfer the exact amount and exact note for automatic top-up. Balance is usually updated within 1-2 minutes.',
+    bankMethodNote: 'Bank QR supports automatic VND top-ups. Your balance is usually updated within 1-2 minutes after a valid transfer.',
+    binanceMethodNote: 'Binance is a manual confirmation method. Customers can pay using your Binance ID or Binance QR.',
+    usdtMethodNote: 'USDT TRC20 uses the TRON network. Please send only via TRC20 to avoid losing funds.',
+    binanceManualTitle: 'Binance payment details',
+    usdtManualTitle: 'USDT TRC20 payment details',
+    binanceIdLabel: 'Binance ID',
+    walletAddressLabel: 'Wallet address',
+    networkLabel: 'Network',
+    manualConfirmation: 'Manual confirmation',
+    autoConfirmation: 'Automatic',
+    iHavePaid: 'I have paid',
+    contactSupport: 'Contact support',
+    manualReviewNotice: 'After sending the payment, please message Telegram support with a screenshot for faster manual verification.',
+    usdtNotice: 'Send USDT on TRC20 only. After payment, send the TXID or screenshot to support if manual checking is needed.',
+    binanceQrHint: 'Scan the Binance QR or transfer to the Binance ID below.',
+    usdtQrHint: 'Scan the wallet QR or copy the USDT TRC20 wallet address below.',
+    pendingManual: 'Pending manual review',
+    historyMethodLabel: 'Method',
+    statusPendingManual: 'Pending manual confirmation',
+    statusWaitingPayment: 'Waiting for payment',
     confirmBuyTitle: 'Confirm purchase',
     productLabel: 'Product',
     priceLabel: 'Price',
@@ -303,11 +375,61 @@ const i18n = {
     creatingQr: 'Creating...',
     qrCreated: 'QR created successfully! Please transfer to top up.',
     depositSuccess: 'Deposit successful! Balance:',
-    pending: 'Pending'
+    pending: 'Pending',
+    copiedSuccess: 'Copied!',
+    amountRequired: 'Please enter a valid amount',
+    manualRequestCreated: 'Payment details are now shown. Please complete the transfer and send proof to support.',
+    bankTransfer: 'Bank transfer',
+    viewPaymentInfo: 'View payment details'
+  }
+};
+
+const depositMethodConfig = {
+  bank_qr: {
+    labelKey: 'bankQr',
+    noteKey: 'bankMethodNote',
+    buttonKey: 'createDepositQr',
+    hintKey: 'scanQrHint',
+    titleKey: 'bankQr',
+    statusMode: 'auto'
+  },
+  binance_manual: {
+    labelKey: 'binanceMethod',
+    noteKey: 'binanceMethodNote',
+    buttonKey: 'createBinanceRequest',
+    hintKey: 'binanceQrHint',
+    titleKey: 'binanceManualTitle',
+    statusMode: 'manual'
+  },
+  usdt_trc20: {
+    labelKey: 'usdtMethod',
+    noteKey: 'usdtMethodNote',
+    buttonKey: 'createUsdtRequest',
+    hintKey: 'usdtQrHint',
+    titleKey: 'usdtManualTitle',
+    statusMode: 'manual'
+  }
+};
+
+const paymentInfo = {
+  bank_qr: {
+    bank: 'MBBANK',
+    account: '0000154878888'
+  },
+  binance_manual: {
+    binanceId: 'PHUONGIOSVIET',
+    qrImage: 'images/binance-qr.png'
+  },
+  usdt_trc20: {
+    wallet: 'TGUMzygAafpw9sPbkx5jvzbu4XKNCPK1QS',
+    network: 'TRC20',
+    qrImage: 'images/usdt-trc20-qr.png'
   }
 };
 
 let currentLang = localStorage.getItem('site_lang') || (navigator.language && navigator.language.toLowerCase().includes('vi') ? 'vi' : 'en');
+let currentDepositMethod = 'bank_qr';
+
 function t(key, ...args) {
   const value = i18n[currentLang][key] ?? i18n.vi[key] ?? key;
   return typeof value === 'function' ? value(...args) : value;
@@ -319,13 +441,17 @@ function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (!key) return;
-    const value = t(key);
-    if (typeof value === 'string' && value.includes('<')) el.innerHTML = value;
-    else el.textContent = value;
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    if (key) el.placeholder = t(key);
   });
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === currentLang);
   });
+  refreshDepositMethodUI();
+  refreshAmountButtonLabels();
   if (currentUser) updateUI();
 }
 
@@ -381,9 +507,13 @@ function updateUI() {
 }
 
 function fmt(n) {
-  if (currentLang === 'en') return `$${Math.max(1, Math.round((n || 0) / 24000))}`;
   return (n || 0).toLocaleString('vi-VN') + 'đ';
 }
+
+function fmtDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'vi-VN');
+}
+
 function logout() { localStorage.removeItem('token'); window.location.href = 'dangnhap.html'; }
 
 // ============================================================
@@ -423,7 +553,7 @@ async function loadDashboard() {
       <td>${o.product_name}</td>
       <td style="font-weight:700">${fmt(o.amount)}</td>
       <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
-      <td>${new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
+      <td>${fmtDate(o.created_at)}</td>
     </tr>`).join('') +
     '</tbody></table></div>';
 }
@@ -452,7 +582,6 @@ async function loadProducts() {
 
   grid.innerHTML = html;
 
-  // Load stock counts
   for (const p of products) {
     const stockData = await API('/api/products/' + p.id + '/stock');
     const el = document.getElementById('stock-' + p.id);
@@ -528,7 +657,6 @@ async function doBuy(productId) {
       return;
     }
 
-    // Show key
     document.getElementById('buy-modal-content').innerHTML = `
       <div style="text-align:center;margin-bottom:20px">
         <div style="font-size:48px;margin-bottom:12px">🎉</div>
@@ -572,8 +700,37 @@ function copyKey(el) {
 // ============================================================
 let selectedAmt = 200000;
 
+function refreshAmountButtonLabels() {
+  document.querySelectorAll('#deposit-amount-grid .amount-btn').forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    const match = onclick.match(/selectAmt\(this,(\d+)\)/);
+    if (!match) return;
+    btn.textContent = fmt(parseInt(match[1], 10));
+  });
+}
+
+function selectDepositMethod(btn, method) {
+  currentDepositMethod = method;
+  document.querySelectorAll('.deposit-method-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('qr-result').style.display = 'none';
+  refreshDepositMethodUI();
+  updateDepositAmt();
+}
+
+function refreshDepositMethodUI() {
+  const cfg = depositMethodConfig[currentDepositMethod];
+  if (!cfg) return;
+
+  document.getElementById('deposit-method-note').querySelector('span').textContent = t(cfg.noteKey);
+  document.getElementById('dep-method-label').textContent = t(cfg.labelKey);
+  document.getElementById('btn-deposit-text').textContent = t(cfg.buttonKey);
+  document.getElementById('qr-hint').textContent = t(cfg.hintKey);
+  updateDepositAmt();
+}
+
 function selectAmt(btn, amt) {
-  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#deposit-amount-grid .amount-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedAmt = amt;
   document.getElementById('custom-amt').value = '';
@@ -587,43 +744,103 @@ function updateDepositAmt() {
   document.getElementById('dep-total').textContent = fmt(amt);
 }
 
+function renderManualPayment(info) {
+  document.getElementById('qr-img').src = info.qrImage || 'images/logo.png';
+  document.getElementById('qr-bank').textContent = info.line1Value;
+  document.getElementById('qr-stk').textContent = info.line2Value;
+  document.getElementById('qr-code').textContent = info.line3Value;
+  document.getElementById('qr-amount').textContent = fmt(info.amount);
+
+  document.getElementById('payment-line-1-label').textContent = info.line1Label;
+  document.getElementById('payment-line-2-label').textContent = info.line2Label;
+  document.getElementById('payment-line-3-label').textContent = info.line3Label;
+  document.getElementById('deposit-result-note').textContent = info.notice;
+  document.getElementById('qr-hint').textContent = info.hint;
+  document.getElementById('qr-result').style.display = 'block';
+}
+
 async function createDeposit() {
   const custom = parseInt(document.getElementById('custom-amt').value) || 0;
   const amount = custom || selectedAmt;
+
+  if (!amount || amount <= 0) {
+    showToast(t('amountRequired'), 'error');
+    return;
+  }
 
   const btn = document.getElementById('btn-deposit');
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> ${t('creatingQr')}`;
 
   try {
-    const res = await fetch('/api/deposit/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ amount }),
-    });
-    const data = await res.json();
+    if (currentDepositMethod === 'bank_qr') {
+      const res = await fetch('/api/deposit/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      showToast(data.error, 'error');
+      if (!res.ok) {
+        showToast(data.error, 'error');
+        return;
+      }
+
+      document.getElementById('payment-line-1-label').textContent = t('bankName');
+      document.getElementById('payment-line-2-label').textContent = t('accountNumber');
+      document.getElementById('payment-line-3-label').textContent = t('transferContent');
+      document.getElementById('deposit-result-note').textContent = t('depositNotice');
+      document.getElementById('qr-hint').textContent = t('scanQrHint');
+      document.getElementById('qr-img').src = data.qr_url;
+      document.getElementById('qr-bank').textContent = data.bank;
+      document.getElementById('qr-stk').textContent = data.stk;
+      document.getElementById('qr-code').textContent = data.deposit_code;
+      document.getElementById('qr-amount').textContent = fmt(data.amount);
+      document.getElementById('qr-result').style.display = 'block';
+
+      showToast(t('qrCreated'), 'success');
+      startBalanceCheck();
       return;
     }
 
-    document.getElementById('qr-img').src = data.qr_url;
-    document.getElementById('qr-bank').textContent = data.bank;
-    document.getElementById('qr-stk').textContent = data.stk;
-    document.getElementById('qr-code').textContent = data.deposit_code;
-    document.getElementById('qr-amount').textContent = fmt(data.amount);
-    document.getElementById('qr-result').style.display = 'block';
+    if (currentDepositMethod === 'binance_manual') {
+      renderManualPayment({
+        qrImage: paymentInfo.binance_manual.qrImage,
+        line1Label: t('binanceIdLabel'),
+        line1Value: paymentInfo.binance_manual.binanceId,
+        line2Label: t('paymentMethod'),
+        line2Value: t('manualConfirmation'),
+        line3Label: t('amountLabel'),
+        line3Value: fmt(amount),
+        amount,
+        hint: t('binanceQrHint'),
+        notice: t('manualReviewNotice')
+      });
+      showToast(t('manualRequestCreated'), 'success');
+      return;
+    }
 
-    showToast(t('qrCreated'), 'success');
-
-    // Auto refresh balance
-    startBalanceCheck();
+    if (currentDepositMethod === 'usdt_trc20') {
+      renderManualPayment({
+        qrImage: paymentInfo.usdt_trc20.qrImage,
+        line1Label: t('walletAddressLabel'),
+        line1Value: paymentInfo.usdt_trc20.wallet,
+        line2Label: t('networkLabel'),
+        line2Value: paymentInfo.usdt_trc20.network,
+        line3Label: t('paymentMethod'),
+        line3Value: t('manualConfirmation'),
+        amount,
+        hint: t('usdtQrHint'),
+        notice: t('usdtNotice')
+      });
+      showToast(t('manualRequestCreated'), 'success');
+      return;
+    }
   } catch {
     showToast(currentLang === 'en' ? 'Server connection error' : 'Lỗi kết nối server', 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-qrcode"></i> ${t('createDepositQr')}`;
+    btn.innerHTML = `<i class="fas fa-qrcode"></i> ${t(depositMethodConfig[currentDepositMethod].buttonKey)}`;
   }
 }
 
@@ -640,8 +857,30 @@ function startBalanceCheck() {
       loadDepositHistory();
     }
   }, 5000);
-  // Stop after 10 minutes
   setTimeout(() => { if (balanceInterval) clearInterval(balanceInterval); }, 600000);
+}
+
+function resolveDepositMethodLabel(deposit) {
+  const method = deposit.method || deposit.pay_method || 'bank_qr';
+  if (method === 'usdt_trc20') return t('usdtMethod');
+  if (method === 'binance_manual' || method === 'binance') return t('binanceMethod');
+  return t('bankQr');
+}
+
+function resolveDepositStatusLabel(deposit) {
+  const status = deposit.status || 'pending';
+  if (status === 'completed') return t('successCompleted');
+  if (status === 'pending_manual') return t('statusPendingManual');
+  if (status === 'waiting_payment') return t('statusWaitingPayment');
+  return t('pending');
+}
+
+function resolveDepositStatusClass(deposit) {
+  const status = deposit.status || 'pending';
+  if (status === 'completed') return 'badge-success';
+  if (status === 'pending_manual') return 'badge-warning';
+  if (status === 'waiting_payment') return 'badge-warning';
+  return 'badge-warning';
 }
 
 async function loadDepositHistory() {
@@ -652,14 +891,14 @@ async function loadDepositHistory() {
     return;
   }
   el.innerHTML = deposits.map(d => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:12px">
       <div>
         <div style="font-size:14px;font-weight:700;color:var(--green)">+${fmt(d.amount)}</div>
-        <div style="font-size:12px;color:var(--muted)">${d.deposit_code} &bull; ${new Date(d.created_at).toLocaleDateString('vi-VN')}</div>
+        <div style="font-size:12px;color:var(--muted)">${d.deposit_code || '—'} &bull; ${resolveDepositMethodLabel(d)} &bull; ${fmtDate(d.created_at)}</div>
       </div>
-      <span class="badge ${d.status === 'completed' ? 'badge-success' : 'badge-warning'}">
-        <i class="fas fa-${d.status === 'completed' ? 'check' : 'clock'}"></i>
-        ${d.status === 'completed' ? t('successCompleted') : t('pending')}
+      <span class="badge ${resolveDepositStatusClass(d)}">
+        <i class="fas fa-${(d.status || 'pending') === 'completed' ? 'check' : 'clock'}"></i>
+        ${resolveDepositStatusLabel(d)}
       </span>
     </div>
   `).join('');
@@ -684,7 +923,7 @@ async function loadOrders() {
       <td style="font-weight:700">${fmt(o.amount)}</td>
       <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
       <td><span class="badge badge-success"><i class="fas fa-check"></i> ${t('successCompleted')}</span></td>
-      <td>${new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
+      <td>${fmtDate(o.created_at)}</td>
     </tr>`).join('') +
     '</tbody></table></div>';
 }
@@ -693,18 +932,16 @@ async function loadOrders() {
 //  UTILS
 // ============================================================
 function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + (type || '');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const tEl = document.getElementById('toast');
+  tEl.textContent = msg;
+  tEl.className = 'toast show ' + (type || '');
+  setTimeout(() => tEl.classList.remove('show'), 3000);
 }
 
-// Close dropdown on click outside
 document.addEventListener('click', e => {
   if (!e.target.closest('.user-badge')) document.getElementById('user-dd').classList.remove('show');
 });
 
-// Close modal on overlay click
 document.getElementById('buy-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('buy-modal')) closeBuyModal();
 });
@@ -714,9 +951,10 @@ document.getElementById('buy-modal').addEventListener('click', e => {
 // ============================================================
 bindLangButtons();
 applyTranslations();
+refreshAmountButtonLabels();
+refreshDepositMethodUI();
 
 loadUser().then(() => {
-  // Support ?tab=shop from homepage links
   const urlTab = new URLSearchParams(window.location.search).get('tab');
   if (urlTab && document.getElementById('page-' + urlTab)) {
     const btn = document.querySelector(`.dash-tab[onclick*="'${urlTab}'"]`);
