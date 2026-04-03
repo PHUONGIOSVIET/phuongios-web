@@ -6,6 +6,122 @@
   <title>Dashboard — PHUONGIOS</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .crypto-info-box {
+      background: #0f172a;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .crypto-qr {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .crypto-qr img {
+      width: 180px;
+      height: 180px;
+      border-radius: 12px;
+      background: #fff;
+      padding: 8px;
+    }
+    .crypto-field {
+      margin-bottom: 14px;
+    }
+    .crypto-field-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .crypto-field-value {
+      background: #1e293b;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .crypto-field-value span {
+      font-family: monospace;
+      font-size: 13px;
+      color: #f1c40f;
+      word-break: break-all;
+      flex: 1;
+    }
+    .crypto-field-value button {
+      background: #334155;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .crypto-field-value button:hover { background: #475569; }
+    .crypto-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      color: #22c55e;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .paid-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      width: 100%;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .paid-btn:hover { opacity: 0.9; }
+    .support-btn-inline {
+      background: #2196f3;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .support-btn-inline:hover { opacity: 0.9; }
+    .manual-notice {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #92400e;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+  </style>
 </head>
 <body>
 
@@ -93,9 +209,15 @@
           </h3>
 
           <div class="amount-grid" style="margin-bottom:18px">
-            <button class="amount-btn selected deposit-method-btn" data-method="bank_qr" onclick="selectDepositMethod(this, 'bank_qr')"><span data-i18n="bankQr">QR Ngân hàng</span></button>
-            <button class="amount-btn deposit-method-btn" data-method="binance_manual" onclick="selectDepositMethod(this, 'binance_manual')"><span data-i18n="binanceMethod">Binance</span></button>
-            <button class="amount-btn deposit-method-btn" data-method="usdt_trc20" onclick="selectDepositMethod(this, 'usdt_trc20')"><span data-i18n="usdtMethod">USDT TRC20</span></button>
+            <button class="amount-btn selected deposit-method-btn" data-method="bank_qr" onclick="selectDepositMethod(this, 'bank_qr')">
+              <i class="fas fa-university"></i> <span data-i18n="bankQr">QR Ngân hàng</span>
+            </button>
+            <button class="amount-btn deposit-method-btn" data-method="binance_manual" onclick="selectDepositMethod(this, 'binance_manual')">
+              <i class="fas fa-coins" style="color:#f0b90b"></i> <span data-i18n="binanceMethod">Binance</span>
+            </button>
+            <button class="amount-btn deposit-method-btn" data-method="usdt_trc20" onclick="selectDepositMethod(this, 'usdt_trc20')">
+              <i class="fas fa-circle-dot" style="color:#26a17b"></i> <span data-i18n="usdtMethod">USDT TRC20</span>
+            </button>
           </div>
 
           <div id="deposit-method-note" class="info-box" style="margin-bottom:18px">
@@ -147,6 +269,7 @@
             <i class="fas fa-qrcode"></i> <span id="btn-deposit-text" data-i18n="createDepositQr">Tạo mã QR nạp tiền</span>
           </button>
 
+          <!-- QR ngân hàng -->
           <div id="qr-result" style="display:none">
             <div class="qr-box">
               <img id="qr-img" alt="QR Code">
@@ -162,6 +285,38 @@
               <i class="fas fa-info-circle" style="flex-shrink:0;margin-top:2px"></i>
               <span id="deposit-result-note" data-i18n="depositNotice">Chuyển đúng số tiền và đúng nội dung để nạp tự động. Số dư cập nhật trong 1-2 phút.</span>
             </div>
+          </div>
+
+          <!-- Crypto manual (Binance / USDT) -->
+          <div id="crypto-result" style="display:none">
+            <div class="crypto-info-box">
+              <div class="crypto-qr">
+                <img id="crypto-qr-img" src="" alt="QR">
+              </div>
+              <p id="crypto-qr-hint" style="text-align:center;font-size:13px;color:#94a3b8;margin-bottom:16px"></p>
+
+              <div id="crypto-fields"></div>
+
+              <div class="crypto-badge">
+                <i class="fas fa-clock"></i>
+                <span id="crypto-confirm-label"></span>
+              </div>
+
+              <div class="manual-notice">
+                <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:1px;color:#f59e0b"></i>
+                <span id="crypto-notice-text"></span>
+              </div>
+            </div>
+
+            <button class="paid-btn" onclick="notifyPaid()">
+              <i class="fas fa-check-circle"></i>
+              <span data-i18n="iHavePaid">Tôi đã chuyển tiền</span>
+            </button>
+
+            <a href="https://t.me/PHUONGIOSVIET" target="_blank" class="support-btn-inline">
+              <i class="fab fa-telegram"></i>
+              <span data-i18n="contactSupport">Liên hệ hỗ trợ</span>
+            </a>
           </div>
         </div>
       </div>
@@ -197,238 +352,116 @@
 <script>
 const i18n = {
   vi: {
-    htmlLang: 'vi',
-    title: 'Dashboard — PHUONGIOS',
-    home: 'Trang chủ',
-    logout: 'Đăng xuất',
-    overview: 'Tổng quan',
-    buyTab: 'Mua hàng',
-    depositTab: 'Nạp tiền',
-    ordersTab: 'Đơn hàng',
-    balanceLabel: 'Số dư hiện tại',
-    totalOrders: 'Đơn hàng',
-    spent: 'Đã chi tiêu',
-    recentOrders: 'Đơn hàng gần đây',
-    chooseProduct: 'Chọn sản phẩm',
-    shopBalancePrefix: 'Số dư của bạn:',
-    shopBalanceSuffix: 'Bấm "Mua ngay" để thanh toán bằng số dư.',
-    depositTitle: 'Nạp tiền vào tài khoản',
-    ordersTitle: 'Lịch sử đơn hàng',
-    buyNow: 'Mua ngay',
-    loading: 'Đang tải...',
-    gameKey: 'Key Game',
-    appleCert: 'Chứng Chỉ Apple',
-    gameLabel: 'Key hack game',
-    certLabel: 'Apple Certificate',
-    stockIn: (n) => `Còn ${n} key`,
-    stockOut: 'Hết hàng',
-    noOrders: 'Chưa có đơn hàng nào',
-    depositHistoryEmpty: 'Chưa có lịch sử nạp',
-    successCompleted: 'Hoàn thành',
-    processing: 'Đang xử lý...',
-    chooseDepositMethod: 'Chọn phương thức nạp',
-    chooseDepositAmount: 'Chọn số tiền nạp',
-    orEnterAmount: 'Hoặc nhập số tiền khác',
-    customAmountPlaceholder: 'Nhập số tiền (VD: 150000)',
-    depositHistory: 'Lịch sử nạp',
-    paymentTitle: 'Thanh toán',
-    depositAmount: 'Số tiền nạp',
-    paymentMethod: 'Phương thức',
-    bankQr: 'QR Ngân hàng',
-    binanceMethod: 'Binance',
-    usdtMethod: 'USDT TRC20',
-    paymentTotal: 'Tổng thanh toán',
-    createDepositQr: 'Tạo mã QR nạp tiền',
-    createBinanceRequest: 'Hiển thị thông tin nạp Binance',
-    createUsdtRequest: 'Hiển thị thông tin nạp USDT',
+    htmlLang: 'vi', title: 'Dashboard — PHUONGIOS', home: 'Trang chủ', logout: 'Đăng xuất',
+    overview: 'Tổng quan', buyTab: 'Mua hàng', depositTab: 'Nạp tiền', ordersTab: 'Đơn hàng',
+    balanceLabel: 'Số dư hiện tại', totalOrders: 'Đơn hàng', spent: 'Đã chi tiêu',
+    recentOrders: 'Đơn hàng gần đây', chooseProduct: 'Chọn sản phẩm',
+    shopBalancePrefix: 'Số dư của bạn:', shopBalanceSuffix: 'Bấm "Mua ngay" để thanh toán bằng số dư.',
+    depositTitle: 'Nạp tiền vào tài khoản', ordersTitle: 'Lịch sử đơn hàng',
+    buyNow: 'Mua ngay', loading: 'Đang tải...', gameKey: 'Key Game Hack',
+    appleCert: 'Chứng Chỉ Apple Developer', gameLabel: 'Key hack game', certLabel: 'Apple Certificate',
+    stockIn: (n) => `Còn ${n} key`, stockOut: 'Hết hàng',
+    noOrders: 'Chưa có đơn hàng nào', depositHistoryEmpty: 'Chưa có lịch sử nạp',
+    successCompleted: 'Hoàn thành', processing: 'Đang xử lý...',
+    chooseDepositMethod: 'Chọn phương thức nạp', chooseDepositAmount: 'Chọn số tiền nạp',
+    orEnterAmount: 'Hoặc nhập số tiền khác', customAmountPlaceholder: 'Nhập số tiền (VD: 150000)',
+    depositHistory: 'Lịch sử nạp', paymentTitle: 'Thanh toán',
+    depositAmount: 'Số tiền nạp', paymentMethod: 'Phương thức',
+    bankQr: 'QR Ngân hàng', binanceMethod: 'Binance', usdtMethod: 'USDT TRC20',
+    paymentTotal: 'Tổng thanh toán', createDepositQr: 'Tạo mã QR nạp tiền',
+    createBinanceRequest: 'Xem thông tin nạp Binance', createUsdtRequest: 'Xem thông tin nạp USDT',
     scanQrHint: 'Quét QR bằng app ngân hàng để thanh toán',
-    bankName: 'Ngân hàng',
-    accountNumber: 'Số tài khoản',
-    transferContent: 'Nội dung CK',
+    binanceQrHint: 'Quét mã QR Binance hoặc chuyển tới Binance ID bên dưới.',
+    usdtQrHint: 'Quét mã QR ví hoặc copy địa chỉ USDT TRC20 để chuyển tiền.',
+    bankName: 'Ngân hàng', accountNumber: 'Số tài khoản', transferContent: 'Nội dung CK',
     amountLabel: 'Số tiền',
     depositNotice: 'Chuyển đúng số tiền và đúng nội dung để nạp tự động. Số dư cập nhật trong 1-2 phút.',
     bankMethodNote: 'QR Banking hỗ trợ nạp tự động bằng VND. Số dư thường cập nhật trong 1-2 phút sau khi chuyển khoản đúng nội dung.',
-    binanceMethodNote: 'Binance là phương thức xác nhận thủ công. Người dùng có thể chuyển qua Binance ID hoặc QR Binance của shop.',
-    usdtMethodNote: 'USDT TRC20 dùng mạng TRON. Hãy chuyển đúng mạng TRC20 để tránh mất tiền.',
-    binanceManualTitle: 'Thông tin nạp Binance',
-    usdtManualTitle: 'Thông tin nạp USDT TRC20',
-    binanceIdLabel: 'Binance ID',
-    walletAddressLabel: 'Địa chỉ ví',
-    networkLabel: 'Mạng',
-    manualConfirmation: 'Xác nhận thủ công',
-    autoConfirmation: 'Tự động',
-    iHavePaid: 'Tôi đã chuyển tiền',
-    contactSupport: 'Liên hệ hỗ trợ',
-    manualReviewNotice: 'Sau khi chuyển tiền, vui lòng gửi ảnh giao dịch qua Telegram để shop xác nhận thủ công nhanh hơn.',
-    usdtNotice: 'Chỉ chuyển USDT mạng TRC20. Sau khi chuyển xong, hãy gửi TXID hoặc ảnh giao dịch cho shop nếu cần đối soát.',
-    binanceQrHint: 'Quét mã QR Binance hoặc chuyển tới Binance ID bên dưới.',
-    usdtQrHint: 'Quét mã QR ví hoặc copy địa chỉ USDT TRC20 để chuyển tiền.',
+    binanceMethodNote: 'Binance xác nhận thủ công. Sau khi chuyển, gửi ảnh giao dịch qua Telegram để shop xác nhận.',
+    usdtMethodNote: 'USDT TRC20 dùng mạng TRON. Chỉ chuyển đúng mạng TRC20 để tránh mất tiền.',
+    binanceManualTitle: 'Thông tin nạp Binance', usdtManualTitle: 'Thông tin nạp USDT TRC20',
+    binanceIdLabel: 'Binance ID', walletAddressLabel: 'Địa chỉ ví', networkLabel: 'Mạng',
+    manualConfirmation: 'Xác nhận thủ công', autoConfirmation: 'Tự động',
+    iHavePaid: 'Tôi đã chuyển tiền ✓', contactSupport: 'Liên hệ Telegram hỗ trợ',
+    manualReviewNotice: 'Sau khi chuyển tiền, bấm "Tôi đã chuyển tiền" rồi gửi ảnh giao dịch qua Telegram để shop xác nhận nhanh hơn.',
+    usdtNotice: 'Chỉ chuyển USDT mạng TRC20. Sau khi chuyển, gửi TXID hoặc ảnh giao dịch cho shop để đối soát.',
     pendingManual: 'Chờ xác nhận tay',
-    historyMethodLabel: 'Phương thức',
-    statusPendingManual: 'Chờ xác nhận thủ công',
-    statusWaitingPayment: 'Chờ thanh toán',
-    confirmBuyTitle: 'Xác nhận mua hàng',
-    productLabel: 'Sản phẩm',
-    priceLabel: 'Giá',
-    currentBalance: 'Số dư hiện tại',
-    remainingBalance: 'Số dư còn lại',
-    insufficientBalance: 'Số dư không đủ! Vui lòng nạp thêm tiền.',
-    confirmBuyBtn: 'Xác nhận mua',
-    closeBtn: 'Đóng',
-    buySuccess: 'Mua thành công!',
-    orderCode: 'Mã đơn',
-    yourKey: 'KEY CỦA BẠN (click để copy):',
-    copyKeySuccess: 'Đã copy key!',
-    creatingQr: 'Đang tạo...',
+    statusPendingManual: 'Chờ xác nhận thủ công', statusWaitingPayment: 'Chờ thanh toán',
+    confirmBuyTitle: 'Xác nhận mua hàng', productLabel: 'Sản phẩm', priceLabel: 'Giá',
+    currentBalance: 'Số dư hiện tại', remainingBalance: 'Số dư còn lại',
+    confirmBuyBtn: 'Xác nhận mua', closeBtn: 'Đóng', buySuccess: 'Mua thành công!',
+    orderCode: 'Mã đơn', yourKey: 'KEY CỦA BẠN (click để copy):',
+    copyKeySuccess: 'Đã copy key!', creatingQr: 'Đang tạo...',
     qrCreated: 'Đã tạo mã QR! Chuyển khoản để nạp tiền.',
-    depositSuccess: 'Nạp tiền thành công! Số dư:',
-    pending: 'Chờ xử lý',
-    copiedSuccess: 'Đã copy!',
-    amountRequired: 'Vui lòng nhập số tiền hợp lệ',
-    manualRequestCreated: 'Đã hiển thị thông tin thanh toán. Vui lòng chuyển tiền và gửi xác nhận cho shop.',
-    bankTransfer: 'Chuyển khoản ngân hàng',
-    viewPaymentInfo: 'Xem thông tin thanh toán'
+    depositSuccess: 'Nạp tiền thành công! Số dư:', pending: 'Chờ xử lý',
+    copiedSuccess: 'Đã copy!', amountRequired: 'Vui lòng nhập số tiền hợp lệ',
+    manualRequestCreated: 'Đã hiển thị thông tin thanh toán. Vui lòng chuyển tiền và gửi xác nhận qua Telegram.',
+    notifyPaidMsg: '🔔 Tôi đã chuyển tiền!\n\nPhương thức: {method}\nSố tiền: {amount}\n\nVui lòng xác nhận và cộng số dư. Cảm ơn!'
   },
   en: {
-    htmlLang: 'en',
-    title: 'Dashboard — PHUONGIOS',
-    home: 'Home',
-    logout: 'Logout',
-    overview: 'Overview',
-    buyTab: 'Shop',
-    depositTab: 'Deposit',
-    ordersTab: 'Orders',
-    balanceLabel: 'Current balance',
-    totalOrders: 'Orders',
-    spent: 'Total spent',
-    recentOrders: 'Recent orders',
-    chooseProduct: 'Choose products',
-    shopBalancePrefix: 'Your balance:',
-    shopBalanceSuffix: 'Click "Buy now" to pay using your balance.',
-    depositTitle: 'Deposit funds',
-    ordersTitle: 'Order history',
-    buyNow: 'Buy now',
-    loading: 'Loading...',
-    gameKey: 'Game Keys',
-    appleCert: 'Apple Certificates',
-    gameLabel: 'Game key',
-    certLabel: 'Apple Certificate',
-    stockIn: (n) => `${n} keys available`,
-    stockOut: 'Out of stock',
-    noOrders: 'No orders yet',
-    depositHistoryEmpty: 'No deposit history yet',
-    successCompleted: 'Completed',
-    processing: 'Processing...',
-    chooseDepositMethod: 'Choose a deposit method',
-    chooseDepositAmount: 'Choose deposit amount',
-    orEnterAmount: 'Or enter a custom amount',
-    customAmountPlaceholder: 'Enter amount in VND (e.g. 150000)',
-    depositHistory: 'Deposit history',
-    paymentTitle: 'Payment',
-    depositAmount: 'Deposit amount',
-    paymentMethod: 'Method',
-    bankQr: 'Bank QR',
-    binanceMethod: 'Binance',
-    usdtMethod: 'USDT TRC20',
-    paymentTotal: 'Total payment',
-    createDepositQr: 'Create deposit QR',
-    createBinanceRequest: 'Show Binance payment details',
-    createUsdtRequest: 'Show USDT payment details',
+    htmlLang: 'en', title: 'Dashboard — PHUONGIOS', home: 'Home', logout: 'Logout',
+    overview: 'Overview', buyTab: 'Shop', depositTab: 'Deposit', ordersTab: 'Orders',
+    balanceLabel: 'Current balance', totalOrders: 'Orders', spent: 'Total spent',
+    recentOrders: 'Recent orders', chooseProduct: 'Choose products',
+    shopBalancePrefix: 'Your balance:', shopBalanceSuffix: 'Click "Buy now" to pay using your balance.',
+    depositTitle: 'Deposit funds', ordersTitle: 'Order history',
+    buyNow: 'Buy now', loading: 'Loading...', gameKey: 'Game Keys',
+    appleCert: 'Apple Developer Certificates', gameLabel: 'Game key', certLabel: 'Apple Certificate',
+    stockIn: (n) => `${n} keys available`, stockOut: 'Out of stock',
+    noOrders: 'No orders yet', depositHistoryEmpty: 'No deposit history yet',
+    successCompleted: 'Completed', processing: 'Processing...',
+    chooseDepositMethod: 'Choose a deposit method', chooseDepositAmount: 'Choose deposit amount',
+    orEnterAmount: 'Or enter a custom amount', customAmountPlaceholder: 'Enter amount in VND (e.g. 150000)',
+    depositHistory: 'Deposit history', paymentTitle: 'Payment',
+    depositAmount: 'Deposit amount', paymentMethod: 'Method',
+    bankQr: 'Bank QR', binanceMethod: 'Binance', usdtMethod: 'USDT TRC20',
+    paymentTotal: 'Total payment', createDepositQr: 'Create deposit QR',
+    createBinanceRequest: 'View Binance payment info', createUsdtRequest: 'View USDT payment info',
     scanQrHint: 'Scan this QR with your banking app to pay',
-    bankName: 'Bank',
-    accountNumber: 'Account number',
-    transferContent: 'Transfer note',
-    amountLabel: 'Amount',
-    depositNotice: 'Transfer the exact amount and exact note for automatic top-up. Balance is usually updated within 1-2 minutes.',
-    bankMethodNote: 'Bank QR supports automatic VND top-ups. Your balance is usually updated within 1-2 minutes after a valid transfer.',
-    binanceMethodNote: 'Binance is a manual confirmation method. Customers can pay using your Binance ID or Binance QR.',
-    usdtMethodNote: 'USDT TRC20 uses the TRON network. Please send only via TRC20 to avoid losing funds.',
-    binanceManualTitle: 'Binance payment details',
-    usdtManualTitle: 'USDT TRC20 payment details',
-    binanceIdLabel: 'Binance ID',
-    walletAddressLabel: 'Wallet address',
-    networkLabel: 'Network',
-    manualConfirmation: 'Manual confirmation',
-    autoConfirmation: 'Automatic',
-    iHavePaid: 'I have paid',
-    contactSupport: 'Contact support',
-    manualReviewNotice: 'After sending the payment, please message Telegram support with a screenshot for faster manual verification.',
-    usdtNotice: 'Send USDT on TRC20 only. After payment, send the TXID or screenshot to support if manual checking is needed.',
     binanceQrHint: 'Scan the Binance QR or transfer to the Binance ID below.',
-    usdtQrHint: 'Scan the wallet QR or copy the USDT TRC20 wallet address below.',
+    usdtQrHint: 'Scan the wallet QR or copy the USDT TRC20 address below.',
+    bankName: 'Bank', accountNumber: 'Account number', transferContent: 'Transfer note',
+    amountLabel: 'Amount',
+    depositNotice: 'Transfer the exact amount and note for automatic top-up. Balance updates within 1-2 minutes.',
+    bankMethodNote: 'Bank QR supports automatic VND top-ups. Balance is usually updated within 1-2 minutes after a valid transfer.',
+    binanceMethodNote: 'Binance requires manual confirmation. After sending, share a screenshot via Telegram for faster processing.',
+    usdtMethodNote: 'USDT TRC20 uses the TRON network. Only send via TRC20 to avoid losing funds.',
+    binanceManualTitle: 'Binance payment details', usdtManualTitle: 'USDT TRC20 payment details',
+    binanceIdLabel: 'Binance ID', walletAddressLabel: 'Wallet address', networkLabel: 'Network',
+    manualConfirmation: 'Manual confirmation', autoConfirmation: 'Automatic',
+    iHavePaid: 'I have paid ✓', contactSupport: 'Contact Telegram support',
+    manualReviewNotice: 'After sending, tap "I have paid" and send a payment screenshot via Telegram for faster manual verification.',
+    usdtNotice: 'Send USDT on TRC20 only. After payment, send the TXID or screenshot to support for verification.',
     pendingManual: 'Pending manual review',
-    historyMethodLabel: 'Method',
-    statusPendingManual: 'Pending manual confirmation',
-    statusWaitingPayment: 'Waiting for payment',
-    confirmBuyTitle: 'Confirm purchase',
-    productLabel: 'Product',
-    priceLabel: 'Price',
-    currentBalance: 'Current balance',
-    remainingBalance: 'Remaining balance',
-    insufficientBalance: 'Insufficient balance! Please deposit more funds.',
-    confirmBuyBtn: 'Confirm purchase',
-    closeBtn: 'Close',
-    buySuccess: 'Purchase successful!',
-    orderCode: 'Order code',
-    yourKey: 'YOUR KEY (click to copy):',
-    copyKeySuccess: 'Key copied successfully!',
-    creatingQr: 'Creating...',
-    qrCreated: 'QR created successfully! Please transfer to top up.',
-    depositSuccess: 'Deposit successful! Balance:',
-    pending: 'Pending',
-    copiedSuccess: 'Copied!',
-    amountRequired: 'Please enter a valid amount',
-    manualRequestCreated: 'Payment details are now shown. Please complete the transfer and send proof to support.',
-    bankTransfer: 'Bank transfer',
-    viewPaymentInfo: 'View payment details'
+    statusPendingManual: 'Pending manual confirmation', statusWaitingPayment: 'Waiting for payment',
+    confirmBuyTitle: 'Confirm purchase', productLabel: 'Product', priceLabel: 'Price',
+    currentBalance: 'Current balance', remainingBalance: 'Remaining balance',
+    confirmBuyBtn: 'Confirm purchase', closeBtn: 'Close', buySuccess: 'Purchase successful!',
+    orderCode: 'Order code', yourKey: 'YOUR KEY (click to copy):',
+    copyKeySuccess: 'Key copied!', creatingQr: 'Creating...',
+    qrCreated: 'QR created! Please transfer to top up.',
+    depositSuccess: 'Deposit successful! Balance:', pending: 'Pending',
+    copiedSuccess: 'Copied!', amountRequired: 'Please enter a valid amount',
+    manualRequestCreated: 'Payment details shown. Please complete the transfer and contact Telegram support.',
+    notifyPaidMsg: '🔔 I have paid!\n\nMethod: {method}\nAmount: {amount}\n\nPlease confirm and credit my account. Thank you!'
   }
 };
 
 const depositMethodConfig = {
-  bank_qr: {
-    labelKey: 'bankQr',
-    noteKey: 'bankMethodNote',
-    buttonKey: 'createDepositQr',
-    hintKey: 'scanQrHint',
-    titleKey: 'bankQr',
-    statusMode: 'auto'
-  },
-  binance_manual: {
-    labelKey: 'binanceMethod',
-    noteKey: 'binanceMethodNote',
-    buttonKey: 'createBinanceRequest',
-    hintKey: 'binanceQrHint',
-    titleKey: 'binanceManualTitle',
-    statusMode: 'manual'
-  },
-  usdt_trc20: {
-    labelKey: 'usdtMethod',
-    noteKey: 'usdtMethodNote',
-    buttonKey: 'createUsdtRequest',
-    hintKey: 'usdtQrHint',
-    titleKey: 'usdtManualTitle',
-    statusMode: 'manual'
-  }
+  bank_qr:         { labelKey: 'bankQr',       noteKey: 'bankMethodNote',    buttonKey: 'createDepositQr',      hintKey: 'scanQrHint',    statusMode: 'auto'   },
+  binance_manual:  { labelKey: 'binanceMethod', noteKey: 'binanceMethodNote', buttonKey: 'createBinanceRequest', hintKey: 'binanceQrHint', statusMode: 'manual' },
+  usdt_trc20:      { labelKey: 'usdtMethod',    noteKey: 'usdtMethodNote',    buttonKey: 'createUsdtRequest',    hintKey: 'usdtQrHint',    statusMode: 'manual' }
 };
 
 const paymentInfo = {
-  bank_qr: {
-    bank: 'MBBANK',
-    account: '0000154878888'
-  },
-  binance_manual: {
-    binanceId: '507075201',
-    qrImage: 'images/binance-qr.png'
-  },
-  usdt_trc20: {
-    wallet: 'TGUMzygAafpw9sPbkx5jvzbu4XKNCPK1QS',
-    network: 'TRC20',
-    qrImage: 'images/usdt-trc20-qr.png'
-  }
+  bank_qr: { bank: 'MBBANK', account: '0000154878888' },
+  binance_manual: { binanceId: '507075201', qrImage: 'images/binance-qr.png' },
+  usdt_trc20: { wallet: 'TGUMzygAafpw9sPbkx5jvzbu4XKNCPK1QS', network: 'TRC20', qrImage: 'images/usdt-trc20-qr.png' }
 };
 
 let currentLang = localStorage.getItem('site_lang') || (navigator.language && navigator.language.toLowerCase().includes('vi') ? 'vi' : 'en');
 let currentDepositMethod = 'bank_qr';
+let currentManualAmount = 0;
 
 function t(key, ...args) {
   const value = i18n[currentLang][key] ?? i18n.vi[key] ?? key;
@@ -461,13 +494,14 @@ function bindLangButtons() {
       currentLang = btn.dataset.lang || 'vi';
       localStorage.setItem('site_lang', currentLang);
       applyTranslations();
-      loadDashboard();
-      loadProducts();
-      loadDepositHistory();
-      loadOrders();
+      loadDashboard(); loadProducts(); loadDepositHistory(); loadOrders();
     };
   });
 }
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'site_lang' && e.newValue) { currentLang = e.newValue; applyTranslations(); }
+});
 
 // ============================================================
 //  AUTH
@@ -506,29 +540,23 @@ function updateUI() {
   }
 }
 
-function fmt(n) {
-  return (n || 0).toLocaleString('vi-VN') + 'đ';
-}
-
+function fmt(n) { return (n || 0).toLocaleString('vi-VN') + 'đ'; }
 function fmtUsd(n) {
   const usd = (n || 0) / 24000;
   return `$${usd.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')}`;
 }
-
 function formatProductPrice(price, usdPrice) {
   if (currentLang === 'en' && typeof usdPrice === 'number') return `$${usdPrice}`;
   return fmt(price);
 }
-
-function fmtDepositByMethod(n, method = currentDepositMethod) {
+function fmtDepositByMethod(n, method) {
+  method = method || currentDepositMethod;
   if (method === 'binance_manual' || method === 'usdt_trc20') return fmtUsd(n);
   return fmt(n);
 }
-
 function fmtDate(dateStr) {
   return new Date(dateStr).toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'vi-VN');
 }
-
 function logout() { localStorage.removeItem('token'); window.location.href = 'dangnhap.html'; }
 
 // ============================================================
@@ -540,7 +568,6 @@ function switchTab(tab, el) {
   document.getElementById('page-' + tab).classList.add('active');
   if (el) el.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
   if (tab === 'shop') loadProducts();
   if (tab === 'orders') loadOrders();
   if (tab === 'deposit') loadDepositHistory();
@@ -555,13 +582,11 @@ async function loadDashboard() {
   const orders = await API('/api/orders');
   document.getElementById('s-orders').textContent = orders.length;
   document.getElementById('s-spent').textContent = fmt(orders.reduce((s, o) => s + o.amount, 0));
-
   const recent = orders.slice(0, 5);
   if (recent.length === 0) {
     document.getElementById('recent-orders').innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>${t('noOrders')}</p><button class="btn btn-primary btn-sm" onclick="switchTab('shop')">${t('buyNow')}</button></div>`;
     return;
   }
-
   document.getElementById('recent-orders').innerHTML = `<div class="table-wrap"><table><thead><tr><th>${t('orderCode')}</th><th>${t('productLabel')}</th><th>${t('amountLabel')}</th><th>Key</th><th>${currentLang === 'en' ? 'Date' : 'Ngày'}</th></tr></thead><tbody>` +
     recent.map(o => `<tr>
       <td><strong>${o.order_code}</strong></td>
@@ -569,8 +594,7 @@ async function loadDashboard() {
       <td style="font-weight:700">${fmt(o.amount)}</td>
       <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
       <td>${fmtDate(o.created_at)}</td>
-    </tr>`).join('') +
-    '</tbody></table></div>';
+    </tr>`).join('') + '</tbody></table></div>';
 }
 
 // ============================================================
@@ -579,24 +603,18 @@ async function loadDashboard() {
 async function loadProducts() {
   const products = await API('/api/products');
   const grid = document.getElementById('product-list');
-
   const gameProducts = products.filter(p => p.category === 'game');
   const certProducts = products.filter(p => p.category === 'cert');
-
   let html = '';
-
   if (gameProducts.length > 0) {
     html += `<div style="grid-column:1/-1"><h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px"><i class="fas fa-gamepad" style="color:#f59e0b"></i> ${t('gameKey')}</h3></div>`;
     html += gameProducts.map(p => productCard(p, 'game')).join('');
   }
-
   if (certProducts.length > 0) {
     html += `<div style="grid-column:1/-1;margin-top:20px"><h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px"><i class="fab fa-apple" style="color:var(--purple)"></i> ${t('appleCert')}</h3></div>`;
     html += certProducts.map(p => productCard(p, 'cert')).join('');
   }
-
   grid.innerHTML = html;
-
   for (const p of products) {
     const stockData = await API('/api/products/' + p.id + '/stock');
     const el = document.getElementById('stock-' + p.id);
@@ -633,7 +651,6 @@ function confirmBuy(id, name, price, usdPrice = null) {
   const insufficientHtml = currentLang === 'en'
     ? `Insufficient balance! Please <a href="#" onclick="closeBuyModal();switchTab('deposit')" style="color:var(--primary);font-weight:700">deposit more funds</a>.`
     : `Số dư không đủ! Vui lòng <a href="#" onclick="closeBuyModal();switchTab('deposit')" style="color:var(--primary);font-weight:700">nạp thêm tiền</a>.`;
-
   document.getElementById('buy-modal-content').innerHTML = `
     <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:18px;font-weight:800;margin-bottom:20px">${t('confirmBuyTitle')}</h3>
     <div class="summary-box">
@@ -656,7 +673,6 @@ async function doBuy(productId) {
   const btn = document.getElementById('btn-buy');
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> ${t('processing')}`;
-
   try {
     const res = await fetch('/api/orders/buy', {
       method: 'POST',
@@ -664,14 +680,12 @@ async function doBuy(productId) {
       body: JSON.stringify({ productId }),
     });
     const data = await res.json();
-
     if (!res.ok) {
       showToast(data.error, 'error');
       btn.disabled = false;
       btn.innerHTML = `<i class="fas fa-check-circle"></i> ${t('confirmBuyBtn')}`;
       return;
     }
-
     document.getElementById('buy-modal-content').innerHTML = `
       <div style="text-align:center;margin-bottom:20px">
         <div style="font-size:48px;margin-bottom:12px">🎉</div>
@@ -695,7 +709,6 @@ async function doBuy(productId) {
       ` : ''}
       <button class="btn btn-outline btn-block" style="margin-top:10px" onclick="closeBuyModal();loadProducts()">${t('closeBtn')}</button>
     `;
-
     currentUser.balance = data.balance;
     updateUI();
   } catch {
@@ -729,6 +742,7 @@ function selectDepositMethod(btn, method) {
   document.querySelectorAll('.deposit-method-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById('qr-result').style.display = 'none';
+  document.getElementById('crypto-result').style.display = 'none';
   refreshDepositMethodUI();
   updateDepositAmt();
 }
@@ -736,11 +750,9 @@ function selectDepositMethod(btn, method) {
 function refreshDepositMethodUI() {
   const cfg = depositMethodConfig[currentDepositMethod];
   if (!cfg) return;
-
   document.getElementById('deposit-method-note').querySelector('span').textContent = t(cfg.noteKey);
   document.getElementById('dep-method-label').textContent = t(cfg.labelKey);
   document.getElementById('btn-deposit-text').textContent = t(cfg.buttonKey);
-  document.getElementById('qr-hint').textContent = t(cfg.hintKey);
   updateDepositAmt();
 }
 
@@ -760,29 +772,61 @@ function updateDepositAmt() {
   document.getElementById('dep-total').textContent = displayAmount;
 }
 
-function renderManualPayment(info) {
-  document.getElementById('qr-img').src = info.qrImage || 'images/logo.png';
-  document.getElementById('qr-bank').textContent = info.line1Value;
-  document.getElementById('qr-stk').textContent = info.line2Value;
-  document.getElementById('qr-code').textContent = info.line3Value;
-  document.getElementById('qr-amount').textContent = fmtDepositByMethod(info.amount, info.method);
+// ===== HIỂN THỊ CRYPTO (Binance / USDT) với nút copy =====
+function renderCryptoPayment(cfg) {
+  const { qrImage, hint, fields, confirmLabel, notice, amount, method } = cfg;
+  currentManualAmount = amount;
 
-  document.getElementById('payment-line-1-label').textContent = info.line1Label;
-  document.getElementById('payment-line-2-label').textContent = info.line2Label;
-  document.getElementById('payment-line-3-label').textContent = info.line3Label;
-  document.getElementById('deposit-result-note').textContent = info.notice;
-  document.getElementById('qr-hint').textContent = info.hint;
-  document.getElementById('qr-result').style.display = 'block';
+  document.getElementById('crypto-qr-img').src = qrImage;
+  document.getElementById('crypto-qr-hint').textContent = hint;
+  document.getElementById('crypto-confirm-label').textContent = confirmLabel;
+  document.getElementById('crypto-notice-text').textContent = notice;
+
+  // Render các field có nút copy
+  document.getElementById('crypto-fields').innerHTML = fields.map(f => `
+    <div class="crypto-field">
+      <div class="crypto-field-label">${f.label}</div>
+      <div class="crypto-field-value">
+        <span>${f.value}</span>
+        <button onclick="copyText('${f.value}')">
+          <i class="fas fa-copy"></i> Copy
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('qr-result').style.display = 'none';
+  document.getElementById('crypto-result').style.display = 'block';
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(t('copiedSuccess'), 'success');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(t('copiedSuccess'), 'success');
+  });
+}
+
+function notifyPaid() {
+  const method = t(depositMethodConfig[currentDepositMethod].labelKey);
+  const amount = fmtDepositByMethod(currentManualAmount);
+  const msg = t('notifyPaidMsg')
+    .replace('{method}', method)
+    .replace('{amount}', amount);
+  window.open('https://t.me/PHUONGIOSVIET?text=' + encodeURIComponent(msg), '_blank');
+  showToast(currentLang === 'en' ? 'Redirecting to Telegram support...' : 'Đang mở Telegram hỗ trợ...', 'success');
 }
 
 async function createDeposit() {
   const custom = parseInt(document.getElementById('custom-amt').value) || 0;
   const amount = custom || selectedAmt;
-
-  if (!amount || amount <= 0) {
-    showToast(t('amountRequired'), 'error');
-    return;
-  }
+  if (!amount || amount <= 0) { showToast(t('amountRequired'), 'error'); return; }
 
   const btn = document.getElementById('btn-deposit');
   btn.disabled = true;
@@ -796,11 +840,7 @@ async function createDeposit() {
         body: JSON.stringify({ amount }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        showToast(data.error, 'error');
-        return;
-      }
+      if (!res.ok) { showToast(data.error, 'error'); return; }
 
       document.getElementById('payment-line-1-label').textContent = t('bankName');
       document.getElementById('payment-line-2-label').textContent = t('accountNumber');
@@ -812,48 +852,48 @@ async function createDeposit() {
       document.getElementById('qr-stk').textContent = data.stk;
       document.getElementById('qr-code').textContent = data.deposit_code;
       document.getElementById('qr-amount').textContent = fmt(data.amount);
+      document.getElementById('crypto-result').style.display = 'none';
       document.getElementById('qr-result').style.display = 'block';
-
       showToast(t('qrCreated'), 'success');
       startBalanceCheck();
       return;
     }
 
     if (currentDepositMethod === 'binance_manual') {
-      renderManualPayment({
+      renderCryptoPayment({
         method: 'binance_manual',
         qrImage: paymentInfo.binance_manual.qrImage,
-        line1Label: t('binanceIdLabel'),
-        line1Value: paymentInfo.binance_manual.binanceId,
-        line2Label: t('paymentMethod'),
-        line2Value: t('manualConfirmation'),
-        line3Label: t('amountLabel'),
-        line3Value: fmtDepositByMethod(amount, 'binance_manual'),
-        amount,
         hint: t('binanceQrHint'),
-        notice: t('manualReviewNotice')
+        confirmLabel: t('manualConfirmation'),
+        notice: t('manualReviewNotice'),
+        amount,
+        fields: [
+          { label: t('binanceIdLabel'), value: paymentInfo.binance_manual.binanceId },
+          { label: t('amountLabel'), value: fmtDepositByMethod(amount, 'binance_manual') }
+        ]
       });
       showToast(t('manualRequestCreated'), 'success');
       return;
     }
 
     if (currentDepositMethod === 'usdt_trc20') {
-      renderManualPayment({
+      renderCryptoPayment({
         method: 'usdt_trc20',
         qrImage: paymentInfo.usdt_trc20.qrImage,
-        line1Label: t('walletAddressLabel'),
-        line1Value: paymentInfo.usdt_trc20.wallet,
-        line2Label: t('networkLabel'),
-        line2Value: paymentInfo.usdt_trc20.network,
-        line3Label: t('amountLabel'),
-        line3Value: fmtDepositByMethod(amount, 'usdt_trc20'),
-        amount,
         hint: t('usdtQrHint'),
-        notice: t('usdtNotice')
+        confirmLabel: t('manualConfirmation'),
+        notice: t('usdtNotice'),
+        amount,
+        fields: [
+          { label: t('walletAddressLabel'), value: paymentInfo.usdt_trc20.wallet },
+          { label: t('networkLabel'), value: paymentInfo.usdt_trc20.network },
+          { label: t('amountLabel'), value: fmtDepositByMethod(amount, 'usdt_trc20') }
+        ]
       });
       showToast(t('manualRequestCreated'), 'success');
       return;
     }
+
   } catch {
     showToast(currentLang === 'en' ? 'Server connection error' : 'Lỗi kết nối server', 'error');
   } finally {
@@ -896,8 +936,6 @@ function resolveDepositStatusLabel(deposit) {
 function resolveDepositStatusClass(deposit) {
   const status = deposit.status || 'pending';
   if (status === 'completed') return 'badge-success';
-  if (status === 'pending_manual') return 'badge-warning';
-  if (status === 'waiting_payment') return 'badge-warning';
   return 'badge-warning';
 }
 
@@ -928,12 +966,10 @@ async function loadDepositHistory() {
 async function loadOrders() {
   const orders = await API('/api/orders');
   const el = document.getElementById('orders-list');
-
   if (!orders || orders.length === 0) {
     el.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>${t('noOrders')}</p><button class="btn btn-primary btn-sm" onclick="switchTab('shop')">${t('buyNow')}</button></div>`;
     return;
   }
-
   el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>${t('orderCode')}</th><th>${t('productLabel')}</th><th>${t('amountLabel')}</th><th>Key</th><th>${currentLang === 'en' ? 'Status' : 'Trạng thái'}</th><th>${currentLang === 'en' ? 'Date' : 'Ngày'}</th></tr></thead><tbody>` +
     orders.map(o => `<tr>
       <td><strong>${o.order_code}</strong></td>
@@ -942,8 +978,7 @@ async function loadOrders() {
       <td><div class="key-box" onclick="copyKey(this)" style="padding:8px 12px;font-size:12px;margin:0">${o.key_code || 'N/A'}</div></td>
       <td><span class="badge badge-success"><i class="fas fa-check"></i> ${t('successCompleted')}</span></td>
       <td>${fmtDate(o.created_at)}</td>
-    </tr>`).join('') +
-    '</tbody></table></div>';
+    </tr>`).join('') + '</tbody></table></div>';
 }
 
 // ============================================================
