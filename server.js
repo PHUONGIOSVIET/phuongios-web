@@ -10,39 +10,22 @@ const crypto = require('crypto');
 
 const FIXED_USD_PRICES = {
   byId: {
-    FF: 12,
-    LQ: 12,
-    BBP: 12,
-    BBPI: 15,
-    PTIPA: 15,
-    PTAND: 18,
+    FF: 12, LQ: 12, BBP: 12, BBPI: 15, PTIPA: 15, PTAND: 18,
   },
   byName: {
-    'free fire': 12,
-    'free fire trollstore': 12,
-    'lien quan mobile': 12,
-    '8 ball pool trollstore': 12,
-    'play together ipa': 15,
-    'playtogether ipa': 15,
-    'play together android': 18,
-    'playtogether android': 18,
-    '8 ball pool ipa': 15,
+    'free fire': 12, 'free fire trollstore': 12, 'lien quan mobile': 12,
+    '8 ball pool trollstore': 12, 'play together ipa': 15, 'playtogether ipa': 15,
+    'play together android': 18, 'playtogether android': 18, '8 ball pool ipa': 15,
   },
 };
 
 function normalizeProductName(name = '') {
-  return String(name)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function getFixedUsdPrice(product = {}) {
   const byIdPrice = FIXED_USD_PRICES.byId[product.id];
   if (typeof byIdPrice === 'number') return byIdPrice;
-
   const byNamePrice = FIXED_USD_PRICES.byName[normalizeProductName(product.name)];
   return typeof byNamePrice === 'number' ? byNamePrice : undefined;
 }
@@ -74,6 +57,8 @@ const CONFIG = {
   ],
   GEEKSIGN_SITE: process.env.GEEKSIGN_SITE || 'iosviet',
   GEEKSIGN_API: 'https://devcs.diannaozy.top/api/ipasign',
+  GEEKSIGN_TIMEOUT: 60000,   // ===== SỬA: tăng từ 15s → 60s =====
+  GEEKSIGN_RETRIES: 2,       // ===== MỚI: thử lại 2 lần nếu timeout =====
   POLL_INTERVAL: 15000,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'phuongios@admin2026',
 };
@@ -81,7 +66,7 @@ const CONFIG = {
 const app = express();
 
 // ============================================================
-//  SECURITY: Rate Limiter (chống brute force + DDoS)
+//  SECURITY: Rate Limiter
 // ============================================================
 const rateLimits = {};
 
@@ -90,15 +75,9 @@ function rateLimit(key, maxRequests, windowMs) {
     const ip = req.ip || req.connection.remoteAddress;
     const id = key + ':' + ip;
     const now = Date.now();
-
     if (!rateLimits[id]) rateLimits[id] = { count: 0, resetAt: now + windowMs };
-
-    if (now > rateLimits[id].resetAt) {
-      rateLimits[id] = { count: 0, resetAt: now + windowMs };
-    }
-
+    if (now > rateLimits[id].resetAt) rateLimits[id] = { count: 0, resetAt: now + windowMs };
     rateLimits[id].count++;
-
     if (rateLimits[id].count > maxRequests) {
       const retryAfter = Math.ceil((rateLimits[id].resetAt - now) / 1000);
       res.set('Retry-After', retryAfter);
@@ -108,7 +87,6 @@ function rateLimit(key, maxRequests, windowMs) {
   };
 }
 
-// Dọn rác rate limit mỗi 5 phút
 setInterval(() => {
   const now = Date.now();
   for (const id in rateLimits) {
@@ -130,11 +108,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limit chung: 100 request/phút per IP
 app.use(rateLimit('global', 100, 60000));
 
 // ============================================================
-//  UDID - Phải đặt TRƯỚC express.json()
+//  UDID
 // ============================================================
 app.get('/api/udid/profile', rateLimit('udid', 10, 60000), (req, res) => {
   const uuid1 = 'phuongios-' + Date.now() + '-' + Math.random().toString(36).substr(2, 8);
@@ -173,7 +150,6 @@ app.get('/api/udid/profile', rateLimit('udid', 10, 60000), (req, res) => {
     <string>Profile Service</string>
 </dict>
 </plist>`;
-
   res.set({
     'Content-Type': 'application/x-apple-aspen-config',
     'Content-Disposition': 'attachment; filename="phuongios-udid.mobileconfig"',
@@ -188,15 +164,12 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
       const match = body.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`));
       return match ? match[1] : '';
     };
-
     const udid = extract('UDID');
     const product = extract('PRODUCT');
     const version = extract('VERSION');
     const serial = extract('SERIAL');
     const imei = extract('IMEI');
-
     console.log('[UDID] Device:', product, '| iOS:', version, '| UDID:', udid);
-
     const params = new URLSearchParams({ udid, product, version, serial, imei });
     res.status(301).set('Location', '/udid.html?' + params.toString()).send();
   } catch (e) {
@@ -208,25 +181,62 @@ app.post('/api/udid/callback', express.raw({ type: '*/*', limit: '100kb' }), (re
 app.use(express.json({ limit: '1mb' }));
 
 // ============================================================
-//  GEEKSIGN CERT API (proxy to hide site ID)
+//  GEEKSIGN CERT API
+//  ===== SỬA CHÍNH: tăng timeout 60s + retry tự động =====
 // ============================================================
 const https = require('https');
 
-function geeksignPost(endpoint, params) {
+function geeksignPost(endpoint, params, retryCount = 0) {
   return new Promise((resolve, reject) => {
     const postData = new URLSearchParams({ ...params, site: CONFIG.GEEKSIGN_SITE }).toString();
     const url = new URL(CONFIG.GEEKSIGN_API + endpoint);
     const options = {
-      hostname: url.hostname, path: url.pathname, method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) },
+      hostname: url.hostname,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(postData),
+      },
     };
+
     const req = https.request(options, (res) => {
       let data = '';
       res.on('data', c => data += c);
-      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ code: -1, msg: 'Lỗi phản hồi' }); } });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch {
+          resolve({ code: -1, msg: 'Lỗi phản hồi từ server chứng chỉ' });
+        }
+      });
     });
-    req.on('error', () => resolve({ code: -1, msg: 'Không kết nối được' }));
-    req.setTimeout(15000, () => { req.destroy(); resolve({ code: -1, msg: 'Hết thời gian kết nối' }); });
+
+    req.on('error', async (err) => {
+      console.error('[GEEKSIGN] Network error:', err.message, '| Retry:', retryCount);
+      // Retry tối đa GEEKSIGN_RETRIES lần
+      if (retryCount < CONFIG.GEEKSIGN_RETRIES) {
+        console.log('[GEEKSIGN] Thử lại lần', retryCount + 1, '...');
+        await new Promise(r => setTimeout(r, 2000)); // chờ 2s trước khi retry
+        resolve(geeksignPost(endpoint, params, retryCount + 1));
+      } else {
+        resolve({ code: -1, msg: 'Không kết nối được tới server chứng chỉ sau ' + CONFIG.GEEKSIGN_RETRIES + ' lần thử' });
+      }
+    });
+
+    // ===== SỬA: tăng timeout từ 15s → 60s =====
+    req.setTimeout(CONFIG.GEEKSIGN_TIMEOUT, async () => {
+      req.destroy();
+      console.warn('[GEEKSIGN] Timeout sau', CONFIG.GEEKSIGN_TIMEOUT / 1000, 's | Retry:', retryCount);
+      if (retryCount < CONFIG.GEEKSIGN_RETRIES) {
+        console.log('[GEEKSIGN] Thử lại lần', retryCount + 1, '...');
+        await new Promise(r => setTimeout(r, 3000)); // chờ 3s trước khi retry timeout
+        resolve(geeksignPost(endpoint, params, retryCount + 1));
+      } else {
+        resolve({ code: -1, msg: 'Hết thời gian kết nối. Vui lòng thử lại sau ít phút.' });
+      }
+    });
+
     req.write(postData);
     req.end();
   });
@@ -234,6 +244,8 @@ function geeksignPost(endpoint, params) {
 
 // Kiểm tra trạng thái UDID/key
 app.post('/api/cert/check', rateLimit('cert-check', 10, 60000), async (req, res) => {
+  // Tăng timeout response Express cho route này
+  res.setTimeout(120000);
   const { value } = req.body || {};
   if (!value || value.length < 5) return res.status(400).json({ error: 'Thiếu thông tin' });
   const result = await geeksignPost('/checkStatus', { value });
@@ -241,13 +253,25 @@ app.post('/api/cert/check', rateLimit('cert-check', 10, 60000), async (req, res)
 });
 
 // Kích hoạt chứng chỉ
-app.post('/api/cert/activate', rateLimit('cert-activate', 5, 60000), async (req, res) => {
+// ===== SỬA: tăng rate limit từ 5 → 8 lần/phút, tăng Express timeout =====
+app.post('/api/cert/activate', rateLimit('cert-activate', 8, 60000), async (req, res) => {
+  // Tăng timeout response lên 130s (> tổng thời gian retry = 60+3+60 = 123s)
+  res.setTimeout(130000);
+
   const { udid, code, appid } = req.body || {};
   if (!udid || !code) return res.status(400).json({ error: 'Thiếu UDID hoặc mã kích hoạt' });
+
+  console.log('[CERT] Kích hoạt:', code.substring(0, 8) + '... | UDID:', udid.substring(0, 8) + '...');
   const result = await geeksignPost('', { udid, code, appid: appid || '0' });
-  adminLog('cert_activate', `UDID: ${udid.substring(0, 8)}... | Code: ${code.substring(0, 6)}... | Result: ${result.msg}`, req.ip);
+  console.log('[CERT] Kết quả:', result.msg || result.code);
+
+  adminLog('cert_activate',
+    `UDID: ${udid.substring(0, 8)}... | Code: ${code.substring(0, 6)}... | Result: ${result.msg}`,
+    req.ip
+  );
   res.json(result);
 });
+
 app.use(express.static(path.join(__dirname, 'phuongios')));
 
 // ============================================================
@@ -271,41 +295,21 @@ async function db(sql, params = []) {
 }
 
 async function initDB() {
-  // Bảng sản phẩm
   await db(`CREATE TABLE IF NOT EXISTS web_products (
-    id VARCHAR(20) PRIMARY KEY,
-    category VARCHAR(20) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    price INT NOT NULL,
-    description TEXT,
-    icon MEDIUMTEXT DEFAULT '',
-    sort_order INT DEFAULT 0
+    id VARCHAR(20) PRIMARY KEY, category VARCHAR(20) NOT NULL, name VARCHAR(100) NOT NULL,
+    price INT NOT NULL, description TEXT, icon MEDIUMTEXT DEFAULT '', sort_order INT DEFAULT 0
   )`);
-  // Convert bảng sang utf8mb4 + fix encoding lỗi (giữ nguyên giá đã sửa)
   await db('ALTER TABLE web_products CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-  // Migrate icon column sang MEDIUMTEXT nếu còn VARCHAR
   await db('ALTER TABLE web_products MODIFY COLUMN icon MEDIUMTEXT DEFAULT ""');
-  // Fix tên/mô tả bị lỗi encoding nhưng GIỮ NGUYÊN giá
   for (const p of CONFIG.PRODUCTS) {
     await db('UPDATE web_products SET name = ?, description = ? WHERE id = ? AND (name LIKE "%?%" OR description LIKE "%?%")',
       [p.name, p.desc, p.id]);
   }
-  // Fix key_stock encoding lỗi: cập nhật game_name bị lỗi sang tên đúng
   await db('ALTER TABLE key_stock CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-  const fixMap = {
-    'Ch_ng ch_ Apple 7 ng_y': 'Chứng chỉ Apple 7 ngày',
-    'Ch_ng ch_ Apple 30 ng_y': 'Chứng chỉ Apple 30 ngày',
-    'Ch_ng ch_ Apple 90 ng_y': 'Chứng chỉ Apple 90 ngày',
-  };
-  // Fix bằng LIKE pattern cho cert keys bị lỗi encoding
   await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%7 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 7 ngày', 'Chứng chỉ Apple 7 ngày']);
   await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%30 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 30 ngày', 'Chứng chỉ Apple 30 ngày']);
   await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%90 ng%' AND game_name LIKE '%Ch%ng%ch%' AND game_name != ?", ['Chứng chỉ Apple 90 ngày', 'Chứng chỉ Apple 90 ngày']);
-  // Fix các game có tên tiếng Việt bị lỗi
   await db("UPDATE key_stock SET game_name = ? WHERE game_name LIKE '%Li%n Qu%n%' AND game_name != ?", ['Liên Quân Mobile', 'Liên Quân Mobile']);
-  const fixed = await db("SELECT ROW_COUNT() as cnt");
-  if (fixed && fixed[0]?.cnt > 0) console.log('[DB] Đã fix encoding key_stock');
-  // Seed sản phẩm mặc định nếu bảng trống
   const existing = await db('SELECT COUNT(*) as cnt FROM web_products');
   if (existing && existing[0].cnt === 0) {
     for (const p of CONFIG.PRODUCTS) {
@@ -314,47 +318,30 @@ async function initDB() {
     }
     console.log('[DB] Đã tạo sản phẩm mặc định');
   }
-
   await db(`CREATE TABLE IF NOT EXISTS web_users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    balance INT DEFAULT 0,
-    created_at DATETIME DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL,
+    balance INT DEFAULT 0, created_at DATETIME DEFAULT NOW()
   )`);
   await db(`CREATE TABLE IF NOT EXISTS web_deposits (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    deposit_code VARCHAR(20) UNIQUE NOT NULL,
-    amount INT NOT NULL,
-    status ENUM('pending','completed') DEFAULT 'pending',
-    created_at DATETIME DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL,
+    deposit_code VARCHAR(20) UNIQUE NOT NULL, amount INT NOT NULL,
+    status ENUM('pending','completed') DEFAULT 'pending', created_at DATETIME DEFAULT NOW()
   )`);
   await db(`CREATE TABLE IF NOT EXISTS web_orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    order_code VARCHAR(20) UNIQUE NOT NULL,
-    product_id VARCHAR(20) NOT NULL,
-    product_name VARCHAR(100) NOT NULL,
-    amount INT NOT NULL,
-    key_code TEXT DEFAULT NULL,
-    status ENUM('completed','failed') DEFAULT 'completed',
-    created_at DATETIME DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL,
+    order_code VARCHAR(20) UNIQUE NOT NULL, product_id VARCHAR(20) NOT NULL,
+    product_name VARCHAR(100) NOT NULL, amount INT NOT NULL, key_code TEXT DEFAULT NULL,
+    status ENUM('completed','failed') DEFAULT 'completed', created_at DATETIME DEFAULT NOW()
   )`);
   await db(`CREATE TABLE IF NOT EXISTS key_stock (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    game_name VARCHAR(100) NOT NULL,
-    key_code TEXT NOT NULL,
-    status ENUM('available','sold') DEFAULT 'available',
+    id INT AUTO_INCREMENT PRIMARY KEY, game_name VARCHAR(100) NOT NULL,
+    key_code TEXT NOT NULL, status ENUM('available','sold') DEFAULT 'available',
     added_date DATETIME DEFAULT NOW()
   )`);
   await db(`CREATE TABLE IF NOT EXISTS admin_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    action VARCHAR(100) NOT NULL,
-    detail TEXT,
-    ip VARCHAR(50),
-    created_at DATETIME DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY, action VARCHAR(100) NOT NULL,
+    detail TEXT, ip VARCHAR(50), created_at DATETIME DEFAULT NOW()
   )`);
   console.log('[DB] Sẵn sàng!');
 }
@@ -378,45 +365,32 @@ function auth(req, res, next) {
 }
 
 // ============================================================
-//  AUTH ROUTES (rate limited)
+//  AUTH ROUTES
 // ============================================================
 app.post('/api/auth/register', rateLimit('register', 5, 300000), async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
-
-  // Validate username
   if (username.length < 3 || username.length > 30) return res.status(400).json({ error: 'Username từ 3-30 ký tự' });
   if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'Username chỉ chứa chữ, số và _' });
-
-  // Validate email
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email không hợp lệ' });
-
-  // Validate password
   if (password.length < 6 || password.length > 100) return res.status(400).json({ error: 'Mật khẩu từ 6-100 ký tự' });
-
   const exists = await db('SELECT id FROM web_users WHERE username = ? OR email = ?', [username, email]);
   if (exists && exists.length > 0) return res.status(400).json({ error: 'Username hoặc email đã tồn tại' });
-
   const hash = await bcrypt.hash(password, 10);
   const result = await db('INSERT INTO web_users (username, email, password) VALUES (?, ?, ?)', [username, email, hash]);
   if (!result) return res.status(500).json({ error: 'Lỗi tạo tài khoản' });
-
   const token = jwt.sign({ id: result.insertId, username }, CONFIG.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, user: { id: result.insertId, username, email, balance: 0 } });
 });
 
-// Login: 10 lần/5 phút per IP (chống brute force)
 app.post('/api/auth/login', rateLimit('login', 10, 300000), async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Thiếu thông tin' });
-
   const users = await db('SELECT * FROM web_users WHERE username = ? OR email = ?', [username, username]);
   if (!users || users.length === 0) return res.status(400).json({ error: 'Sai tài khoản hoặc mật khẩu' });
-
   const user = users[0];
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(400).json({ error: 'Sai tài khoản hoặc mật khẩu' });
-
   const token = jwt.sign({ id: user.id, username: user.username }, CONFIG.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, user: { id: user.id, username: user.username, email: user.email, balance: user.balance } });
 });
@@ -428,19 +402,15 @@ app.get('/api/auth/me', auth, async (req, res) => {
 });
 
 // ============================================================
-//  PRODUCTS (từ Database)
+//  PRODUCTS
 // ============================================================
 async function getProducts() {
   const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
   return (products || []).map(p => {
     const usdPrice = getFixedUsdPrice(p);
     return {
-      id: p.id,
-      category: p.category,
-      name: p.name,
-      price: p.price,
-      desc: p.description,
-      icon: p.icon || '',  // full path: "uploads/prod_xx.png" hoặc "" nếu chưa có
+      id: p.id, category: p.category, name: p.name, price: p.price,
+      desc: p.description, icon: p.icon || '',
       priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
       ...(typeof usdPrice === 'number' ? { usdPrice } : {}),
     };
@@ -460,45 +430,31 @@ app.get('/api/products/:id/stock', async (req, res) => {
 });
 
 // ============================================================
-//  BUY PRODUCT (rate limited: 5 lần/phút)
+//  BUY PRODUCT
 // ============================================================
 app.post('/api/orders/buy', auth, rateLimit('buy', 5, 60000), async (req, res) => {
   const { productId } = req.body;
   const prods = await db('SELECT * FROM web_products WHERE id = ?', [productId]);
   if (!prods || prods.length === 0) return res.status(400).json({ error: 'Sản phẩm không tồn tại' });
   const product = { id: prods[0].id, name: prods[0].name, price: prods[0].price };
-
   const users = await db('SELECT balance FROM web_users WHERE id = ?', [req.user.id]);
   if (!users || users.length === 0) return res.status(400).json({ error: 'User không tồn tại' });
   if (users[0].balance < product.price) return res.status(400).json({ error: 'Số dư không đủ. Vui lòng nạp thêm tiền.' });
-
   const stock = await db('SELECT id, key_code FROM key_stock WHERE game_name = ? AND status = ? LIMIT 1', [product.name, 'available']);
   if (!stock || stock.length === 0) return res.status(400).json({ error: 'Hết hàng! Vui lòng quay lại sau.' });
-
   const key = stock[0];
   const orderCode = 'WEB' + Math.floor(100000 + Math.random() * 900000);
-
   const deduct = await db('UPDATE web_users SET balance = balance - ? WHERE id = ? AND balance >= ?', [product.price, req.user.id, product.price]);
   if (!deduct || deduct.affectedRows === 0) return res.status(400).json({ error: 'Số dư không đủ' });
-
   const markSold = await db('UPDATE key_stock SET status = ? WHERE id = ? AND status = ?', ['sold', key.id, 'available']);
   if (!markSold || markSold.affectedRows === 0) {
     await db('UPDATE web_users SET balance = balance + ? WHERE id = ?', [product.price, req.user.id]);
     return res.status(400).json({ error: 'Key đã được bán. Vui lòng thử lại.' });
   }
-
   await db('INSERT INTO web_orders (user_id, order_code, product_id, product_name, amount, key_code) VALUES (?, ?, ?, ?, ?, ?)',
     [req.user.id, orderCode, product.id, product.name, product.price, key.key_code]);
-
   const updated = await db('SELECT balance FROM web_users WHERE id = ?', [req.user.id]);
-
-  res.json({
-    order_code: orderCode,
-    product: product.name,
-    key_code: key.key_code,
-    amount: product.price,
-    balance: updated ? updated[0].balance : 0,
-  });
+  res.json({ order_code: orderCode, product: product.name, key_code: key.key_code, amount: product.price, balance: updated ? updated[0].balance : 0 });
 });
 
 // ============================================================
@@ -513,29 +469,18 @@ app.get('/api/orders', auth, async (req, res) => {
 });
 
 // ============================================================
-//  DEPOSIT (rate limited: 5 lần/phút)
+//  DEPOSIT
 // ============================================================
 app.post('/api/deposit/create', auth, rateLimit('deposit', 5, 60000), async (req, res) => {
   const { amount } = req.body;
   if (!amount || amount < 10000) return res.status(400).json({ error: 'Số tiền tối thiểu 10.000đ' });
   if (amount > 10000000) return res.status(400).json({ error: 'Số tiền tối đa 10.000.000đ' });
-
   const depositCode = 'NAP' + Math.floor(100000 + Math.random() * 900000);
-
-  const result = await db('INSERT INTO web_deposits (user_id, deposit_code, amount) VALUES (?, ?, ?)',
-    [req.user.id, depositCode, amount]);
+  const result = await db('INSERT INTO web_deposits (user_id, deposit_code, amount) VALUES (?, ?, ?)', [req.user.id, depositCode, amount]);
   if (!result) return res.status(500).json({ error: 'Lỗi tạo lệnh nạp' });
-
   const qrUrl = 'https://img.vietqr.io/image/' + CONFIG.NGAN_HANG + '-' + CONFIG.STK +
     '-compact2.png?amount=' + amount + '&addInfo=' + depositCode + '&accountName=PHUONGIOS';
-
-  res.json({
-    deposit_code: depositCode,
-    amount,
-    qr_url: qrUrl,
-    bank: CONFIG.NGAN_HANG,
-    stk: CONFIG.STK,
-  });
+  res.json({ deposit_code: depositCode, amount, qr_url: qrUrl, bank: CONFIG.NGAN_HANG, stk: CONFIG.STK });
 });
 
 app.get('/api/deposit/history', auth, async (req, res) => {
@@ -547,53 +492,34 @@ app.get('/api/deposit/history', auth, async (req, res) => {
 });
 
 // ============================================================
-//  PAY2S WEBHOOK (xác thực token)
+//  PAY2S WEBHOOK
 // ============================================================
 app.post('/webhook/pay2s', async (req, res) => {
-  // Xác thực webhook token từ Pay2S
   const webhookToken = req.headers['x-webhook-token'] || req.query.token || '';
   if (webhookToken !== CONFIG.PAY2S_WEBHOOK_TOKEN) {
     console.log('[WEBHOOK] Token không hợp lệ:', webhookToken);
     return res.status(403).json({ error: 'Forbidden' });
   }
-
   console.log('[WEBHOOK]', JSON.stringify(req.body));
   res.json({ success: true });
-
   try {
     const { transactions } = req.body;
     if (!transactions || !Array.isArray(transactions)) return;
-
     for (const trans of transactions) {
       const content = (trans.content || trans.description || '').toUpperCase();
       const amount = trans.transferAmount || trans.amount || 0;
       const transferType = trans.transferType || trans.type || 'IN';
       if (transferType !== 'IN') continue;
-
       const napMatch = content.match(/NAP\d+/);
       if (napMatch) {
         const depositCode = napMatch[0];
-        console.log('[WEBHOOK] Deposit:', depositCode, amount);
-
-        const deps = await db('SELECT id, user_id, amount FROM web_deposits WHERE deposit_code = ? AND status = ? LIMIT 1',
-          [depositCode, 'pending']);
+        const deps = await db('SELECT id, user_id, amount FROM web_deposits WHERE deposit_code = ? AND status = ? LIMIT 1', [depositCode, 'pending']);
         if (!deps || deps.length === 0) continue;
-
         const dep = deps[0];
-        if (amount < dep.amount) {
-          console.log('[WEBHOOK] Số tiền không đủ:', amount, '<', dep.amount);
-          continue;
-        }
-
+        if (amount < dep.amount) continue;
         await db('UPDATE web_deposits SET status = ? WHERE id = ?', ['completed', dep.id]);
         await db('UPDATE web_users SET balance = balance + ? WHERE id = ?', [dep.amount, dep.user_id]);
         console.log('[WEBHOOK] Nạp thành công! User:', dep.user_id, 'Amount:', dep.amount);
-        continue;
-      }
-
-      const ordMatch = content.match(/ORD\d+/);
-      if (ordMatch) {
-        console.log('[WEBHOOK] Bot order:', ordMatch[0], '- skip (bot xử lý)');
       }
     }
   } catch (e) {
@@ -634,27 +560,22 @@ async function pollDeposits() {
   try {
     const token = await getPay2sToken();
     if (!token) return;
-
     const res = await fetch(
       'https://api-partner.pay2s.vn/v1/transactions?accountNumber=' + CONFIG.PAY2S_ACCOUNT,
       { headers: { 'Authorization': 'Bearer ' + token } }
     );
     const data = await res.json();
     if (!data.status || !data.transactions) return;
-
     const newTrans = data.transactions
       .filter(t => t.id > lastProcessedId && (t.type === 'IN' || t.transferType === 'IN'))
       .reverse();
-
     for (const trans of newTrans) {
       const content = (trans.description || trans.content || '').toUpperCase();
       const amount = trans.transferAmount || trans.amount || 0;
-
       const napMatch = content.match(/NAP\d+/);
       if (napMatch) {
         const depositCode = napMatch[0];
-        const deps = await db('SELECT id, user_id, amount FROM web_deposits WHERE deposit_code = ? AND status = ? LIMIT 1',
-          [depositCode, 'pending']);
+        const deps = await db('SELECT id, user_id, amount FROM web_deposits WHERE deposit_code = ? AND status = ? LIMIT 1', [depositCode, 'pending']);
         if (deps && deps.length > 0) {
           const dep = deps[0];
           if (amount >= dep.amount) {
@@ -664,10 +585,8 @@ async function pollDeposits() {
           }
         }
       }
-
       lastProcessedId = Math.max(lastProcessedId, trans.id);
     }
-
     if (data.transactions.length > 0 && lastProcessedId === 0) {
       lastProcessedId = data.transactions[0].id;
     }
@@ -692,7 +611,6 @@ function adminAuth(req, res, next) {
   }
 }
 
-// Admin login
 app.post('/api/admin/login', rateLimit('admin-login', 5, 300000), (req, res) => {
   const { password } = req.body;
   if (password !== CONFIG.ADMIN_PASSWORD) return res.status(401).json({ error: 'Sai mật khẩu admin' });
@@ -701,28 +619,19 @@ app.post('/api/admin/login', rateLimit('admin-login', 5, 300000), (req, res) => 
   res.json({ token });
 });
 
-// Dashboard stats
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const users = await db('SELECT COUNT(*) as cnt FROM web_users');
   const orders = await db('SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total FROM web_orders');
   const deposits = await db('SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total FROM web_deposits WHERE status="completed"');
   const keys = await db('SELECT COUNT(*) as cnt FROM key_stock WHERE status="available"');
-  res.json({
-    totalUsers: users?.[0]?.cnt || 0,
-    totalOrders: orders?.[0]?.cnt || 0,
-    totalRevenue: orders?.[0]?.total || 0,
-    totalDeposits: deposits?.[0]?.total || 0,
-    availableKeys: keys?.[0]?.cnt || 0,
-  });
+  res.json({ totalUsers: users?.[0]?.cnt || 0, totalOrders: orders?.[0]?.cnt || 0, totalRevenue: orders?.[0]?.total || 0, totalDeposits: deposits?.[0]?.total || 0, availableKeys: keys?.[0]?.cnt || 0 });
 });
 
-// Danh sách users
 app.get('/api/admin/users', adminAuth, async (req, res) => {
   const users = await db('SELECT id, username, email, balance, created_at FROM web_users ORDER BY id DESC LIMIT 100');
   res.json(users || []);
 });
 
-// Sửa balance user
 app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
   const { balance } = req.body;
   if (balance === undefined || balance < 0) return res.status(400).json({ error: 'Balance không hợp lệ' });
@@ -731,34 +640,26 @@ app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Danh sách đơn hàng
 app.get('/api/admin/orders', adminAuth, async (req, res) => {
-  const orders = await db(`SELECT o.*, u.username FROM web_orders o
-    LEFT JOIN web_users u ON o.user_id = u.id
-    ORDER BY o.created_at DESC LIMIT 100`);
+  const orders = await db(`SELECT o.*, u.username FROM web_orders o LEFT JOIN web_users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 100`);
   res.json(orders || []);
 });
 
-// Danh sách key stock
 app.get('/api/admin/keys', adminAuth, async (req, res) => {
   const keys = await db('SELECT * FROM key_stock ORDER BY id DESC LIMIT 200');
   res.json(keys || []);
 });
 
-// Danh sách tên sản phẩm (cho dropdown thêm key)
 app.get('/api/admin/product-names', adminAuth, async (req, res) => {
   const products = await db('SELECT id, name FROM web_products ORDER BY sort_order ASC');
   res.json(products || []);
 });
 
-// Thêm key
 app.post('/api/admin/keys', adminAuth, async (req, res) => {
   const { game_name, keys } = req.body;
   if (!game_name || !keys) return res.status(400).json({ error: 'Thiếu thông tin' });
-
   const keyList = keys.split('\n').map(k => k.trim()).filter(k => k.length > 0);
   if (keyList.length === 0) return res.status(400).json({ error: 'Không có key nào' });
-
   let added = 0;
   for (const key of keyList) {
     const result = await db('INSERT INTO key_stock (game_name, key_code, status) VALUES (?, ?, "available")', [game_name, key]);
@@ -768,114 +669,84 @@ app.post('/api/admin/keys', adminAuth, async (req, res) => {
   res.json({ success: true, added });
 });
 
-// Xoá key
 app.delete('/api/admin/keys/:id', adminAuth, async (req, res) => {
   await db('DELETE FROM key_stock WHERE id = ?', [req.params.id]);
   adminLog('delete_key', `Key #${req.params.id}`, req.ip);
   res.json({ success: true });
 });
 
-// Lấy sản phẩm + giá hiện tại
 app.get('/api/admin/products', adminAuth, async (req, res) => {
   const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
   res.json((products || []).map(p => ({ id: p.id, category: p.category, name: p.name, price: p.price, desc: p.description, icon: p.icon || '' })));
 });
 
-// Thêm sản phẩm mới
 app.post('/api/admin/products/create', adminAuth, async (req, res) => {
   const { id, name, category, price, desc } = req.body;
   if (!id || !name || !category || !price) return res.status(400).json({ error: 'Thiếu thông tin' });
   if (!/^[A-Z0-9]{1,20}$/.test(id)) return res.status(400).json({ error: 'Mã SP chỉ gồm chữ in hoa và số, tối đa 20 ký tự' });
   if (!['game', 'cert'].includes(category)) return res.status(400).json({ error: 'Loại phải là game hoặc cert' });
-
   const existing = await db('SELECT id FROM web_products WHERE id = ?', [id]);
   if (existing && existing.length > 0) return res.status(400).json({ error: 'Mã SP đã tồn tại' });
-
   const maxOrder = await db('SELECT MAX(sort_order) as mx FROM web_products');
   const sortOrder = (maxOrder?.[0]?.mx || 0) + 1;
-
   const result = await db('INSERT INTO web_products (id, category, name, price, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
     [id, category, name, price, desc || name, sortOrder]);
   if (!result) return res.status(500).json({ error: 'Lỗi tạo sản phẩm' });
-
   adminLog('create_product', `${id}: ${name} (${category}) - ${price}đ`, req.ip);
   res.json({ success: true });
 });
 
-// Xoá sản phẩm
 app.delete('/api/admin/products/:id/delete', adminAuth, async (req, res) => {
   const products = await db('SELECT * FROM web_products WHERE id = ?', [req.params.id]);
   if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-
   await db('DELETE FROM web_products WHERE id = ?', [req.params.id]);
   adminLog('delete_product', `${req.params.id}: ${products[0].name}`, req.ip);
   res.json({ success: true });
 });
 
-// Sửa sản phẩm (giá, tên, mô tả)
 app.post('/api/admin/products/:id/update', adminAuth, async (req, res) => {
   const { price, desc, name } = req.body;
   const products = await db('SELECT * FROM web_products WHERE id = ?', [req.params.id]);
   if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-
   const changes = [];
   if (price !== undefined) { await db('UPDATE web_products SET price = ? WHERE id = ?', [price, req.params.id]); changes.push(`giá=${price}`); }
   if (desc) { await db('UPDATE web_products SET description = ? WHERE id = ?', [desc, req.params.id]); changes.push('mô tả'); }
   if (name) {
     const oldName = products[0].name;
     await db('UPDATE web_products SET name = ? WHERE id = ?', [name, req.params.id]);
-    // Đồng bộ key_stock: đổi game_name theo tên mới
     await db('UPDATE key_stock SET game_name = ? WHERE game_name = ?', [name, oldName]);
     changes.push(`tên=${name}`);
   }
-
   adminLog('update_product', `${req.params.id}: ${changes.join(', ')}`, req.ip);
   res.json({ success: true });
 });
 
-// Danh sách nạp tiền
 app.get('/api/admin/deposits', adminAuth, async (req, res) => {
-  const deposits = await db(`SELECT d.*, u.username FROM web_deposits d
-    LEFT JOIN web_users u ON d.user_id = u.id
-    ORDER BY d.created_at DESC LIMIT 100`);
+  const deposits = await db(`SELECT d.*, u.username FROM web_deposits d LEFT JOIN web_users u ON d.user_id = u.id ORDER BY d.created_at DESC LIMIT 100`);
   res.json(deposits || []);
 });
 
-// Upload icon sản phẩm (base64 → lưu thẳng vào DB, không cần file system)
 app.post('/api/admin/products/:id/icon', adminAuth, async (req, res) => {
   const { base64 } = req.body;
   if (!base64) return res.status(400).json({ error: 'Thiếu dữ liệu ảnh' });
-
   const products = await db('SELECT id FROM web_products WHERE id = ?', [req.params.id]);
   if (!products || products.length === 0) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
-
-  // Chỉ cho phép PNG/JPG/WEBP, max 500KB
   const matches = base64.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
   if (!matches) return res.status(400).json({ error: 'Định dạng ảnh không hợp lệ (chỉ PNG/JPG)' });
-
   const imageData = Buffer.from(matches[2], 'base64');
   if (imageData.length > 512 * 1024) return res.status(400).json({ error: 'Ảnh quá lớn (tối đa 500KB)' });
-
-  // Lưu base64 trực tiếp vào DB — không bao giờ mất
   await db('UPDATE web_products SET icon = ? WHERE id = ?', [base64, req.params.id]);
   adminLog('upload_icon', `${req.params.id}: ${Math.round(imageData.length/1024)}KB`, req.ip);
   res.json({ success: true, icon: base64 });
 });
 
-// Admin logs
 app.get('/api/admin/logs', adminAuth, async (req, res) => {
   const logs = await db('SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 200');
   res.json(logs || []);
 });
 
-// ============================================================
-//  HEALTH (ẩn thông tin nhạy cảm)
-// ============================================================
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK' });
-});
+app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 
-// SPA fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'phuongios', 'index.html'));
 });
@@ -885,9 +756,14 @@ app.get('*', (req, res) => {
 // ============================================================
 async function main() {
   await initDB();
-  app.listen(CONFIG.PORT, '0.0.0.0', () => {
+  const server = app.listen(CONFIG.PORT, '0.0.0.0', () => {
     console.log('[SERVER] http://localhost:' + CONFIG.PORT);
   });
+
+  // ===== SỬA: tăng server timeout lên 130s để không cắt kết nối khi cert activate =====
+  server.timeout = 130000;
+  server.keepAliveTimeout = 130000;
+
   setInterval(pollDeposits, CONFIG.POLL_INTERVAL);
   console.log('[POLL] Kiểm tra GD mỗi ' + (CONFIG.POLL_INTERVAL / 1000) + 's/lần');
 }

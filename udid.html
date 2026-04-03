@@ -162,7 +162,7 @@
 
       <div class="safari-warning">
         <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px"></i>
-        <span data-i18n="safariNotice"><strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.</span>
+        <span data-i18n-html="safariNotice"><strong>Lưu ý:</strong> Bạn phải mở trang này bằng <strong>Safari</strong> trên iPhone/iPad. Không dùng Chrome, Zalo hay trình duyệt khác.</span>
       </div>
 
       <a href="/api/udid/profile" class="btn btn-primary btn-block" style="padding:15px;font-size:16px;margin-bottom:20px;text-decoration:none">
@@ -335,9 +335,11 @@ const i18n = {
 };
 
 let currentLang = localStorage.getItem('site_lang') || (navigator.language && navigator.language.toLowerCase().includes('vi') ? 'vi' : 'en');
+
 function t(key) {
   return i18n[currentLang][key] ?? i18n.vi[key] ?? key;
 }
+
 function applyTranslations() {
   document.documentElement.lang = t('htmlLang');
   document.title = t('title');
@@ -355,10 +357,16 @@ function applyTranslations() {
     const key = el.dataset.i18nPlaceholder;
     if (key) el.placeholder = t(key);
   });
+  // Cập nhật select options
+  document.querySelectorAll('select option[data-i18n]').forEach(opt => {
+    const key = opt.dataset.i18n;
+    if (key) opt.textContent = t(key);
+  });
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === currentLang);
   });
 }
+
 function bindLangButtons() {
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.onclick = () => {
@@ -369,31 +377,33 @@ function bindLangButtons() {
   });
 }
 
+// ===== SỬA LỖI: Lắng nghe thay đổi localStorage từ tab/trang khác =====
+window.addEventListener('storage', (e) => {
+  if (e.key === 'site_lang' && e.newValue) {
+    currentLang = e.newValue;
+    applyTranslations();
+  }
+});
+
 const params = new URLSearchParams(window.location.search);
 const udid = params.get('udid');
-// Tự động điền key nếu được chuyển từ trang mua hàng
 const autoKey = params.get('autokey');
 if (autoKey) {
-  // Lưu tạm, sẽ điền sau khi DOM sẵn sàng
   window._autoKey = autoKey;
 }
 
 if (udid && udid !== '' && udid !== 'unknown') {
-  // Hiển thị kết quả
   document.getElementById('udid-guide').style.display = 'none';
   document.getElementById('udid-result').style.display = 'block';
 
   document.getElementById('udid-text').textContent = udid;
 
-  // Tự động điền key từ trang mua hàng
   if (window._autoKey) {
     const certCodeInput = document.getElementById('cert-code');
     if (certCodeInput) {
       certCodeInput.value = window._autoKey;
-      // Cuộn xuống phần kích hoạt
       setTimeout(() => {
         certCodeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Highlight input
         certCodeInput.style.borderColor = 'var(--green)';
         certCodeInput.style.boxShadow = '0 0 0 3px rgba(34,197,94,0.2)';
       }, 600);
@@ -405,7 +415,6 @@ if (udid && udid !== '' && udid !== 'unknown') {
   const serial = params.get('serial') || '—';
   const imei = params.get('imei') || '';
 
-  // Map product code to device name
   const deviceNames = {
     'iPhone14,5': 'iPhone 13', 'iPhone14,2': 'iPhone 13 Pro', 'iPhone14,3': 'iPhone 13 Pro Max',
     'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max', 'iPhone15,4': 'iPhone 15',
@@ -440,10 +449,10 @@ function copyUDID() {
 }
 
 function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + (type || '');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || '');
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // ====== KÍCH HOẠT CHỨNG CHỈ ======
@@ -459,18 +468,23 @@ async function activateCert() {
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;vertical-align:middle"></span> ${t('activating')}`;
 
+  // Timeout 60 giây (server cần thời gian gọi API bên ngoài)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
   try {
     const res = await fetch('/api/cert/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ udid: udidVal, code, appid }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
     const box = document.getElementById('cert-result');
     box.style.display = 'block';
 
     if (data.code === 1 || data.code === 0) {
-      // Thành công
       let html = `<div style="background:#f0fdf4;border:1.5px solid #22c55e;border-radius:12px;padding:16px">
         <div style="font-weight:700;color:#16a34a;margin-bottom:12px;font-size:16px"><i class="fas fa-check-circle"></i> ${t('activateSuccess')}</div>`;
 
@@ -524,15 +538,29 @@ async function activateCert() {
       box.innerHTML = html;
       showToast(t('activateSuccess'), 'success');
     } else {
-      // Lỗi
-      const errorMsg = data.msg || data.error || 'Có lỗi xảy ra';
+      const errorMsg = data.msg || data.error || t('unknownError');
       box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:14px">
         <div style="font-weight:700;color:#dc2626"><i class="fas fa-times-circle"></i> ${errorMsg}</div>
       </div>`;
       showToast(errorMsg, 'error');
     }
   } catch (e) {
-    showToast(t('connectionError'), 'error');
+    clearTimeout(timeoutId);
+    const isTimeout = e.name === 'AbortError';
+    const box = document.getElementById('cert-result');
+    box.style.display = 'block';
+    const msg = isTimeout
+      ? (currentLang === 'en'
+          ? '⏱️ Request timed out. The server is taking longer than usual. Please try again.'
+          : '⏱️ Quá thời gian chờ. Server đang xử lý lâu hơn bình thường. Vui lòng thử lại.')
+      : t('connectionError');
+    box.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #ef4444;border-radius:12px;padding:16px">
+      <div style="font-weight:700;color:#dc2626;margin-bottom:10px"><i class="fas fa-clock"></i> ${msg}</div>
+      <button class="btn btn-primary btn-block" style="padding:11px" onclick="activateCert()">
+        <i class="fas fa-redo"></i> ${currentLang === 'en' ? 'Retry' : 'Thử lại'}
+      </button>
+    </div>`;
+    showToast(msg, 'error');
   }
 
   btn.disabled = false;
@@ -565,7 +593,6 @@ async function checkStatus() {
         const stateColor = isOk ? '#16a34a' : '#dc2626';
         const stateText = isOk ? t('activeState') : isDown ? t('revokedState') : d.state;
 
-        // Tính số ngày bảo hành còn lại
         let warrantyHtml = '';
         if (d.addtime && d.yy) {
           const addDate = new Date(d.addtime);
@@ -580,7 +607,6 @@ async function checkStatus() {
             }
           }
         }
-        // Nếu không có yy, tính từ type (秒出 = có thể là gói 40 ngày mặc định)
         if (!warrantyHtml && d.addtime) {
           const addDate = new Date(d.addtime);
           const daysSince = Math.floor((Date.now() - addDate) / 86400000);
@@ -594,9 +620,7 @@ async function checkStatus() {
           <div style="color:var(--muted);margin-top:4px">${t('addedDateLabel')}: ${d.addtime || '—'}</div>
           ${warrantyHtml}`;
 
-        // Nút yêu cầu bảo hành nếu bị thu hồi
         if (isDown) {
-          const udidShort = d.udid ? d.udid.substring(0, 12) + '...' : '';
           const warrantyMsg = encodeURIComponent(`🛡️ YÊU CẦU BẢO HÀNH\n\nUDID: ${d.udid}\nTên: ${d.pname}\nNgày thêm: ${d.addtime}\nTrạng thái: Đã bị thu hồi\n\nVui lòng cấp lại chứng chỉ.`);
           html += `<div style="margin-top:10px">
             <a href="https://t.me/PHUONGIOSVIET?text=${warrantyMsg}" target="_blank" class="btn btn-danger btn-block" style="padding:11px;text-decoration:none;font-size:13px">
@@ -624,6 +648,7 @@ async function checkStatus() {
   }
 }
 
+// ===== KHỞI ĐỘNG =====
 bindLangButtons();
 applyTranslations();
 </script>

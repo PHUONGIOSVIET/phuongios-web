@@ -528,7 +528,7 @@ async function loadUser() {
 }
 
 function updateUI() {
-  const bal = fmt(currentUser.balance);
+  const bal = currentLang === 'en' ? fmtUsd(currentUser.balance) : fmtVnd(currentUser.balance);
   document.getElementById('h-balance').textContent = bal;
   document.getElementById('h-username').textContent = currentUser.username;
   document.getElementById('h-avatar').textContent = currentUser.username[0].toUpperCase();
@@ -540,19 +540,32 @@ function updateUI() {
   }
 }
 
-function fmt(n) { return (n || 0).toLocaleString('vi-VN') + 'đ'; }
+function fmt(n) {
+  // Khi EN: hiển thị USD thay VNĐ
+  if (currentLang === 'en') return fmtUsd(n);
+  return (n || 0).toLocaleString('vi-VN') + 'đ';
+}
 function fmtUsd(n) {
   const usd = (n || 0) / 24000;
   return `$${usd.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')}`;
 }
+function fmtVnd(n) {
+  // Luôn hiển thị VNĐ (dùng cho nội dung chuyển khoản bank)
+  return (n || 0).toLocaleString('vi-VN') + 'đ';
+}
 function formatProductPrice(price, usdPrice) {
-  if (currentLang === 'en' && typeof usdPrice === 'number') return `$${usdPrice}`;
-  return fmt(price);
+  if (currentLang === 'en') {
+    if (typeof usdPrice === 'number' && usdPrice > 0) return `$${usdPrice}`;
+    return fmtUsd(price); // fallback: tự convert
+  }
+  return fmtVnd(price);
 }
 function fmtDepositByMethod(n, method) {
   method = method || currentDepositMethod;
-  if (method === 'binance_manual' || method === 'usdt_trc20') return fmtUsd(n);
-  return fmt(n);
+  // Bank QR: VI=VNĐ, EN=USD
+  if (method === 'bank_qr') return currentLang === 'en' ? fmtUsd(n) : fmtVnd(n);
+  // Crypto: luôn USD
+  return fmtUsd(n);
 }
 function fmtDate(dateStr) {
   return new Date(dateStr).toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'vi-VN');
@@ -774,10 +787,24 @@ function updateDepositAmt() {
 
 // ===== HIỂN THỊ CRYPTO (Binance / USDT) với nút copy =====
 function renderCryptoPayment(cfg) {
-  const { qrImage, hint, fields, confirmLabel, notice, amount, method } = cfg;
+  const { qrImage, hint, fields, confirmLabel, notice, amount, method, qrData } = cfg;
   currentManualAmount = amount;
 
-  document.getElementById('crypto-qr-img').src = qrImage;
+  // Tạo QR code động nếu có qrData (địa chỉ ví / binance ID)
+  const qrImgEl = document.getElementById('crypto-qr-img');
+  if (qrData) {
+    // Dùng QR API miễn phí - tạo từ data thực
+    qrImgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrData)}`;
+  } else {
+    qrImgEl.src = qrImage;
+    qrImgEl.onerror = () => {
+      // Fallback: tạo QR từ fields đầu tiên
+      const firstVal = fields[0]?.value || '';
+      qrImgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(firstVal)}`;
+      qrImgEl.onerror = null;
+    };
+  }
+
   document.getElementById('crypto-qr-hint').textContent = hint;
   document.getElementById('crypto-confirm-label').textContent = confirmLabel;
   document.getElementById('crypto-notice-text').textContent = notice;
@@ -788,7 +815,7 @@ function renderCryptoPayment(cfg) {
       <div class="crypto-field-label">${f.label}</div>
       <div class="crypto-field-value">
         <span>${f.value}</span>
-        <button onclick="copyText('${f.value}')">
+        <button onclick="copyText(${JSON.stringify(f.value)})">
           <i class="fas fa-copy"></i> Copy
         </button>
       </div>
@@ -851,7 +878,7 @@ async function createDeposit() {
       document.getElementById('qr-bank').textContent = data.bank;
       document.getElementById('qr-stk').textContent = data.stk;
       document.getElementById('qr-code').textContent = data.deposit_code;
-      document.getElementById('qr-amount').textContent = fmt(data.amount);
+      document.getElementById('qr-amount').textContent = fmtVnd(data.amount); // Bank QR luôn VNĐ
       document.getElementById('crypto-result').style.display = 'none';
       document.getElementById('qr-result').style.display = 'block';
       showToast(t('qrCreated'), 'success');
@@ -863,6 +890,7 @@ async function createDeposit() {
       renderCryptoPayment({
         method: 'binance_manual',
         qrImage: paymentInfo.binance_manual.qrImage,
+        qrData: paymentInfo.binance_manual.binanceId, // tạo QR từ Binance ID
         hint: t('binanceQrHint'),
         confirmLabel: t('manualConfirmation'),
         notice: t('manualReviewNotice'),
@@ -880,6 +908,7 @@ async function createDeposit() {
       renderCryptoPayment({
         method: 'usdt_trc20',
         qrImage: paymentInfo.usdt_trc20.qrImage,
+        qrData: paymentInfo.usdt_trc20.wallet, // tạo QR từ địa chỉ ví
         hint: t('usdtQrHint'),
         confirmLabel: t('manualConfirmation'),
         notice: t('usdtNotice'),
