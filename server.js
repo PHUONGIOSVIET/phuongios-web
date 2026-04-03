@@ -8,6 +8,45 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const crypto = require('crypto');
 
+const FIXED_USD_PRICES = {
+  byId: {
+    FF: 12,
+    LQ: 12,
+    BBP: 12,
+    BBPI: 15,
+    PTIPA: 15,
+    PTAND: 18,
+  },
+  byName: {
+    'free fire': 12,
+    'free fire trollstore': 12,
+    'lien quan mobile': 12,
+    '8 ball pool trollstore': 12,
+    'play together ipa': 15,
+    'playtogether ipa': 15,
+    'play together android': 18,
+    'playtogether android': 18,
+    '8 ball pool ipa': 15,
+  },
+};
+
+function normalizeProductName(name = '') {
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getFixedUsdPrice(product = {}) {
+  const byIdPrice = FIXED_USD_PRICES.byId[product.id];
+  if (typeof byIdPrice === 'number') return byIdPrice;
+
+  const byNamePrice = FIXED_USD_PRICES.byName[normalizeProductName(product.name)];
+  return typeof byNamePrice === 'number' ? byNamePrice : undefined;
+}
+
 const CONFIG = {
   PORT: process.env.PORT || 4000,
   JWT_SECRET: process.env.JWT_SECRET || 'phuongios_jwt_secret_2026_fixed_key',
@@ -393,15 +432,19 @@ app.get('/api/auth/me', auth, async (req, res) => {
 // ============================================================
 async function getProducts() {
   const products = await db('SELECT * FROM web_products ORDER BY sort_order ASC');
-  return (products || []).map(p => ({
-    id: p.id,
-    category: p.category,
-    name: p.name,
-    price: p.price,
-    desc: p.description,
-    icon: p.icon || '',  // full path: "uploads/prod_xx.png" hoặc "" nếu chưa có
-    priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
-  }));
+  return (products || []).map(p => {
+    const usdPrice = getFixedUsdPrice(p);
+    return {
+      id: p.id,
+      category: p.category,
+      name: p.name,
+      price: p.price,
+      desc: p.description,
+      icon: p.icon || '',  // full path: "uploads/prod_xx.png" hoặc "" nếu chưa có
+      priceFormatted: p.price.toLocaleString('vi-VN') + 'đ',
+      ...(typeof usdPrice === 'number' ? { usdPrice } : {}),
+    };
+  });
 }
 
 app.get('/api/products', async (req, res) => {

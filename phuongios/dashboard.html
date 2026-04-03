@@ -384,6 +384,12 @@ function fmt(n) {
   if (currentLang === 'en') return `$${Math.max(1, Math.round((n || 0) / 24000))}`;
   return (n || 0).toLocaleString('vi-VN') + 'đ';
 }
+
+function formatProductPrice(price, usdPrice) {
+  if (currentLang === 'en' && typeof usdPrice === 'number') return `$${usdPrice}`;
+  return fmt(price);
+}
+
 function logout() { localStorage.removeItem('token'); window.location.href = 'dangnhap.html'; }
 
 // ============================================================
@@ -473,10 +479,10 @@ function productCard(p, type) {
     <p class="product-desc">${p.desc}</p>
     <div class="product-footer">
       <div>
-        <div class="product-price">${fmt(p.price)}</div>
+        <div class="product-price">${formatProductPrice(p.price, p.usdPrice)}</div>
         <div class="product-stock" id="stock-${p.id}">${t('loading')}</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="confirmBuy('${p.id}','${p.name}',${p.price})">${t('buyNow')}</button>
+      <button class="btn btn-primary btn-sm" onclick='confirmBuy(${JSON.stringify(p.id)}, ${JSON.stringify(p.name)}, ${p.price}, ${typeof p.usdPrice === 'number' ? p.usdPrice : 'null'})'>${t('buyNow')}</button>
     </div>
   </div>`;
 }
@@ -484,7 +490,7 @@ function productCard(p, type) {
 // ============================================================
 //  BUY
 // ============================================================
-function confirmBuy(id, name, price) {
+function confirmBuy(id, name, price, usdPrice = null) {
   const modal = document.getElementById('buy-modal');
   const insufficientHtml = currentLang === 'en'
     ? `Insufficient balance! Please <a href="#" onclick="closeBuyModal();switchTab('deposit')" style="color:var(--primary);font-weight:700">deposit more funds</a>.`
@@ -494,13 +500,13 @@ function confirmBuy(id, name, price) {
     <h3 style="font-family:'Be Vietnam Pro',sans-serif;font-size:18px;font-weight:800;margin-bottom:20px">${t('confirmBuyTitle')}</h3>
     <div class="summary-box">
       <div class="sum-row"><span>${t('productLabel')}</span><span style="font-weight:700">${name}</span></div>
-      <div class="sum-row"><span>${t('priceLabel')}</span><span style="color:var(--primary);font-weight:700">${fmt(price)}</span></div>
+      <div class="sum-row"><span>${t('priceLabel')}</span><span style="color:var(--primary);font-weight:700">${formatProductPrice(price, usdPrice)}</span></div>
       <div class="sum-row"><span>${t('currentBalance')}</span><span>${fmt(currentUser.balance)}</span></div>
       <div class="sum-row"><span>${t('remainingBalance')}</span><span style="color:${currentUser.balance >= price ? 'var(--green)' : 'var(--red)'}">${fmt(currentUser.balance - price)}</span></div>
     </div>
     ${currentUser.balance < price
       ? `<div class="info-box"><i class="fas fa-exclamation-triangle"></i><span>${insufficientHtml}</span></div>`
-      : `<button class="btn btn-success btn-block" style="padding:13px" onclick="doBuy('${id}')" id="btn-buy"><i class="fas fa-check-circle"></i> ${t('confirmBuyBtn')} - ${fmt(price)}</button>`
+      : `<button class="btn btn-success btn-block" style="padding:13px" onclick="doBuy('${id}')" id="btn-buy"><i class="fas fa-check-circle"></i> ${t('confirmBuyBtn')} - ${formatProductPrice(price, usdPrice)}</button>`
     }
   `;
   modal.classList.add('show');

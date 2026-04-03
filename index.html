@@ -264,6 +264,28 @@
     return product.priceFormatted || `${(product.price || 0).toLocaleString('vi-VN')}đ`;
   }
 
+  // ===== SỬA LỖI: applyTranslations chạy độc lập, không bị renderHeaderAuth ghi đè =====
+  function applyTranslations() {
+    document.documentElement.lang = t('htmlLang');
+    document.title = t('title');
+    // Dịch tất cả data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (key) el.textContent = t(key);
+    });
+    // Dịch tất cả data-i18n-html (bao gồm các bước UDID)
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.dataset.i18nHtml;
+      if (key) el.innerHTML = t(key);
+    });
+    // Cập nhật active button ngôn ngữ
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === currentLang);
+    });
+    // Re-render products nếu đã có
+    if (loadedProducts.length) renderProducts();
+  }
+
   function renderHeaderAuth() {
     const headerRight = document.getElementById('header-right');
     if (!headerRight) return;
@@ -288,7 +310,10 @@
       `;
     }
 
+    // ===== SỬA LỖI: Bind lại nút ngôn ngữ SAU khi rebuild header =====
     bindLangButtons();
+    // ===== SỬA LỖI: Áp dụng lại bản dịch SAU khi rebuild header =====
+    applyTranslations();
   }
 
   function bindLangButtons() {
@@ -300,6 +325,14 @@
       };
     });
   }
+
+  // ===== SỬA LỖI: Đồng bộ ngôn ngữ khi đổi từ tab khác =====
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'site_lang' && e.newValue) {
+      currentLang = e.newValue;
+      applyTranslations();
+    }
+  });
 
   function renderProducts() {
     if (!loadedProducts.length) return;
@@ -332,21 +365,6 @@
     });
   }
 
-  function applyTranslations() {
-    document.documentElement.lang = t('htmlLang');
-    document.title = t('title');
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.dataset.i18n;
-      if (key) el.textContent = t(key);
-    });
-    document.querySelectorAll('[data-i18n-html]').forEach(el => {
-      const key = el.dataset.i18nHtml;
-      if (key) el.innerHTML = t(key);
-    });
-    renderHeaderAuth();
-    renderProducts();
-  }
-
   function renderProductCard(p) {
     const img = (p.icon && p.icon.startsWith('data:')) ? p.icon : (defaultIcons[p.category] || defaultIcons.game);
     const catLabel = p.category === 'cert' ? t('certLabel') : t('gameLabel');
@@ -367,7 +385,7 @@
     </div>`;
   }
 
-  // Load products from API
+  // Load products
   fetch('/api/products')
     .then(r => r.json())
     .then(products => {
@@ -401,8 +419,6 @@
     window.currentUser = null;
     renderHeaderAuth();
   }
-
-  applyTranslations();
 </script>
 </body>
 </html>
