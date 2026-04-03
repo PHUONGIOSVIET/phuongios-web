@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập — PHUONGIOS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <div class="lang-switch" id="lang-switch">
+      <button type="button" class="lang-btn active" data-lang="vi">VI</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </div>
+  <div class="auth-logo">
+    <a href="index.html" class="logo" style="font-size:26px"><img src="images/logo.png" alt="PHUONGIOS"></a>
+    <p data-i18n="tagline">Key Game & Chứng Chỉ Apple</p>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuth('login')" data-i18n="tabLogin">Đăng nhập</button>
+      <button class="auth-tab" onclick="switchAuth('register')" data-i18n="tabRegister">Đăng ký</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-form active" id="form-login">
+      <div class="form-group">
+        <label data-i18n="loginUserLabel">Tên đăng nhập hoặc Email</label>
+        <div class="input-icon">
+          <i class="fas fa-user"></i>
+          <input type="text" class="form-control" id="login-user" data-i18n-placeholder="loginUserPlaceholder" placeholder="Nhập username hoặc email">
+        </div>
+        <div class="form-error" id="err-login" data-i18n="errLoginDefault">Sai tài khoản hoặc mật khẩu</div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="passwordLabel">Mật khẩu</label>
+        <div class="input-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" class="form-control" id="login-pw" data-i18n-placeholder="loginPwPlaceholder" placeholder="Nhập mật khẩu"
+                 onkeydown="if(event.key==='Enter')doLogin()">
+          <i class="fas fa-eye toggle-pw" onclick="togglePw('login-pw',this)"></i>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" style="padding:13px" onclick="doLogin()" id="btn-login">
+        <i class="fas fa-sign-in-alt"></i> <span data-i18n="tabLogin">Đăng nhập</span>
+      </button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-form" id="form-register">
+      <div class="form-group">
+        <label data-i18n="registerUserLabel">Tên đăng nhập</label>
+        <div class="input-icon">
+          <i class="fas fa-user"></i>
+          <input type="text" class="form-control" id="reg-user" data-i18n-placeholder="registerUserPlaceholder" placeholder="Chọn username (vd: phuong123)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="emailLabel">Email</label>
+        <div class="input-icon">
+          <i class="fas fa-envelope"></i>
+          <input type="email" class="form-control" id="reg-email" data-i18n-placeholder="registerEmailPlaceholder" placeholder="example@email.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="passwordLabel">Mật khẩu</label>
+        <div class="input-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" class="form-control" id="reg-pw" data-i18n-placeholder="registerPwPlaceholder" placeholder="Tối thiểu 6 ký tự">
+          <i class="fas fa-eye toggle-pw" onclick="togglePw('reg-pw',this)"></i>
+        </div>
+      </div>
+      <div class="form-group">
+        <label data-i18n="confirmPwLabel">Xác nhận mật khẩu</label>
+        <div class="input-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" class="form-control" id="reg-pw2" data-i18n-placeholder="confirmPwPlaceholder" placeholder="Nhập lại mật khẩu"
+                 onkeydown="if(event.key==='Enter')doRegister()">
+          <i class="fas fa-eye toggle-pw" onclick="togglePw('reg-pw2',this)"></i>
+        </div>
+      </div>
+      <div class="form-error" id="err-reg" style="margin-bottom:12px" data-i18n="errRegisterDefault">Lỗi đăng ký</div>
+      <button class="btn btn-primary btn-block" style="padding:13px" onclick="doRegister()" id="btn-reg">
+        <i class="fas fa-user-plus"></i> <span data-i18n="registerBtn">Tạo tài khoản</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const i18n = {
+    vi: {
+      htmlLang: 'vi',
+      title: 'Đăng nhập — PHUONGIOS',
+      tagline: 'Key Game & Chứng Chỉ Apple',
+      tabLogin: 'Đăng nhập',
+      tabRegister: 'Đăng ký',
+      loginUserLabel: 'Tên đăng nhập hoặc Email',
+      loginUserPlaceholder: 'Nhập username hoặc email',
+      passwordLabel: 'Mật khẩu',
+      loginPwPlaceholder: 'Nhập mật khẩu',
+      registerUserLabel: 'Tên đăng nhập',
+      registerUserPlaceholder: 'Chọn username (vd: phuong123)',
+      emailLabel: 'Email',
+      registerEmailPlaceholder: 'example@email.com',
+      registerPwPlaceholder: 'Tối thiểu 6 ký tự',
+      confirmPwLabel: 'Xác nhận mật khẩu',
+      confirmPwPlaceholder: 'Nhập lại mật khẩu',
+      registerBtn: 'Tạo tài khoản',
+      errLoginDefault: 'Sai tài khoản hoặc mật khẩu',
+      errRegisterDefault: 'Lỗi đăng ký',
+      fillAll: 'Vui lòng nhập đầy đủ thông tin',
+      loginSuccess: 'Đăng nhập thành công!',
+      registerSuccess: 'Đăng ký thành công!',
+      serverError: 'Lỗi kết nối server',
+      processing: 'Đang xử lý...',
+      minPassword: 'Mật khẩu tối thiểu 6 ký tự',
+      passwordMismatch: 'Mật khẩu không khớp'
+    },
+    en: {
+      htmlLang: 'en',
+      title: 'Login — PHUONGIOS',
+      tagline: 'Game Keys & Apple Certificates',
+      tabLogin: 'Login',
+      tabRegister: 'Register',
+      loginUserLabel: 'Username or Email',
+      loginUserPlaceholder: 'Enter username or email',
+      passwordLabel: 'Password',
+      loginPwPlaceholder: 'Enter password',
+      registerUserLabel: 'Username',
+      registerUserPlaceholder: 'Choose a username (e.g. phuong123)',
+      emailLabel: 'Email',
+      registerEmailPlaceholder: 'example@email.com',
+      registerPwPlaceholder: 'At least 6 characters',
+      confirmPwLabel: 'Confirm password',
+      confirmPwPlaceholder: 'Re-enter password',
+      registerBtn: 'Create account',
+      errLoginDefault: 'Invalid username or password',
+      errRegisterDefault: 'Registration error',
+      fillAll: 'Please fill in all required fields',
+      loginSuccess: 'Login successful!',
+      registerSuccess: 'Registration successful!',
+      serverError: 'Server connection error',
+      processing: 'Processing...',
+      minPassword: 'Password must be at least 6 characters',
+      passwordMismatch: 'Passwords do not match'
+    }
+  };
+
+  let currentLang = localStorage.getItem('site_lang') || (navigator.language && navigator.language.toLowerCase().includes('vi') ? 'vi' : 'en');
+
+  function t(key) {
+    return i18n[currentLang][key] ?? i18n.vi[key] ?? key;
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = t('htmlLang');
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (key) el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      if (key) el.placeholder = t(key);
+    });
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === currentLang);
+    });
+  }
+
+  function bindLangButtons() {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.onclick = () => {
+        currentLang = btn.dataset.lang || 'vi';
+        localStorage.setItem('site_lang', currentLang);
+        applyTranslations();
+      };
+    });
+  }
+
+  // Redirect if already logged in
+  if (localStorage.getItem('token')) window.location.href = 'dashboard.html';
+
+  function switchAuth(tab) {
+    document.querySelectorAll('.auth-tab').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+    document.getElementById('form-login').classList.toggle('active', tab==='login');
+    document.getElementById('form-register').classList.toggle('active', tab==='register');
+  }
+
+  function togglePw(id, icon) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.classList.toggle('fa-eye');
+    icon.classList.toggle('fa-eye-slash');
+  }
+
+  async function doLogin() {
+    const username = document.getElementById('login-user').value.trim();
+    const password = document.getElementById('login-pw').value;
+    if (!username || !password) return showErr('err-login', t('fillAll'));
+
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${t('processing')}`;
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('err-login', data.error);
+
+      localStorage.setItem('token', data.token);
+      showToast(t('loginSuccess'), 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 500);
+    } catch {
+      showErr('err-login', t('serverError'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-sign-in-alt"></i> ${t('tabLogin')}`;
+    }
+  }
+
+  async function doRegister() {
+    const username = document.getElementById('reg-user').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-pw').value;
+    const pw2 = document.getElementById('reg-pw2').value;
+
+    if (!username || !email || !password) return showErr('err-reg', t('fillAll'));
+    if (password.length < 6) return showErr('err-reg', t('minPassword'));
+    if (password !== pw2) return showErr('err-reg', t('passwordMismatch'));
+
+    const btn = document.getElementById('btn-reg');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span> ${t('processing')}`;
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showErr('err-reg', data.error);
+
+      localStorage.setItem('token', data.token);
+      showToast(t('registerSuccess'), 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 500);
+    } catch {
+      showErr('err-reg', t('serverError'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-user-plus"></i> ${t('registerBtn')}`;
+    }
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  bindLangButtons();
+  applyTranslations();
+</script>
+</body>
+</html>
