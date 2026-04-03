@@ -258,7 +258,12 @@
 
   function formatPrice(product) {
     if (currentLang === 'en') {
-      if (typeof product.usdPrice === 'number') return `$${product.usdPrice}`;
+      if (typeof product.usdPrice === 'number' && product.usdPrice > 0) return `$${product.usdPrice}`;
+      // Fallback: tự convert VNĐ → USD
+      if (product.price > 0) {
+        const usd = product.price / 24000;
+        return usd < 5 ? `$${Math.round(usd * 10) / 10}` : `$${Math.round(usd)}`;
+      }
       return '$--';
     }
     return product.priceFormatted || `${(product.price || 0).toLocaleString('vi-VN')}đ`;

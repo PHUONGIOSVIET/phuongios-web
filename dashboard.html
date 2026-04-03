@@ -555,8 +555,14 @@ function fmtVnd(n) {
 }
 function formatProductPrice(price, usdPrice) {
   if (currentLang === 'en') {
+    // Ưu tiên usdPrice cố định từ server
     if (typeof usdPrice === 'number' && usdPrice > 0) return `$${usdPrice}`;
-    return fmtUsd(price); // fallback: tự convert
+    // Fallback: tự convert VNĐ → USD
+    if (price > 0) {
+      const usd = price / 24000;
+      return usd < 5 ? `$${(Math.round(usd * 10) / 10)}` : `$${Math.round(usd)}`;
+    }
+    return '$--';
   }
   return fmtVnd(price);
 }

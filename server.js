@@ -10,7 +10,15 @@ const crypto = require('crypto');
 
 const FIXED_USD_PRICES = {
   byId: {
-    FF: 12, LQ: 12, BBP: 12, BBPI: 15, PTIPA: 15, PTAND: 18,
+    // Game
+    FF: 12, LQ: 12, BBP: 12, BBPI: 15, PTIPA: 15, PTAND: 18, CF: 18,
+    // Cert — tính theo tỷ giá 24,000đ
+    CERT7:   2,   // 50,000đ  ≈ $2
+    CERT30:  7,   // 150,000đ ≈ $6.25 → làm tròn $7
+    CERT60:  12,  // ~280,000đ
+    CERT90:  15,  // 350,000đ ≈ $14.6 → $15
+    CERT170: 25,
+    CERT330: 45,
   },
   byName: {
     'free fire': 12, 'free fire trollstore': 12, 'lien quan mobile': 12,
@@ -24,10 +32,22 @@ function normalizeProductName(name = '') {
 }
 
 function getFixedUsdPrice(product = {}) {
+  // 1. Tìm theo ID
   const byIdPrice = FIXED_USD_PRICES.byId[product.id];
   if (typeof byIdPrice === 'number') return byIdPrice;
+
+  // 2. Tìm theo tên
   const byNamePrice = FIXED_USD_PRICES.byName[normalizeProductName(product.name)];
-  return typeof byNamePrice === 'number' ? byNamePrice : undefined;
+  if (typeof byNamePrice === 'number') return byNamePrice;
+
+  // 3. Fallback: tự convert từ VNĐ → USD (tỷ giá 24,000)
+  if (product.price && product.price > 0) {
+    const usd = product.price / 24000;
+    // Làm tròn đẹp: <$5 → 1 chữ số thập phân, ≥$5 → số nguyên
+    return usd < 5 ? Math.round(usd * 10) / 10 : Math.round(usd);
+  }
+
+  return undefined;
 }
 
 const CONFIG = {
